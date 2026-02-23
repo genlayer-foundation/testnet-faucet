@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: #ffffff;
+  --color-foreground: #131214;
+
+  --color-brand-purple: #9e4bf6;
+  --color-brand-purple-hover: #8f3de7;
+  --color-brand-purple-light: rgba(158, 75, 246, 0.1);
+  --color-brand-gradient-from: #be8ff5;
+  --color-brand-gradient-to: #ac6df3;
+  --color-brand-orange: #e99322;
+  --color-brand-orange-light: rgba(233, 147, 34, 0.1);
+
+  --color-surface: #ffffff;
+  --color-surface-secondary: #f5f5f5;
+  --color-surface-dark: #1a1c1d;
+
+  --color-border-default: #e5e5e6;
+  --color-border-light: #f5f5f5;
+
+  --color-text-primary: #131214;
+  --color-text-secondary: #6b6b6b;
+  --color-text-placeholder: #ababab;
+  --color-text-muted: #bababa;
+
+  --color-success: #3eb359;
+  --color-success-light: rgba(62, 179, 89, 0.1);
+  --color-info: #4f76f6;
+  --color-info-light: rgba(79, 118, 246, 0.1);
+  --color-warning: #e99322;
+  --color-warning-light: rgba(233, 147, 34, 0.1);
+  --color-error: #e53e3e;
+  --color-error-light: rgba(229, 62, 62, 0.1);
+
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+}
