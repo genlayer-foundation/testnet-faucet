@@ -1,6 +1,7 @@
 import { Header } from "@/components/header";
 import { FaucetForm } from "@/components/faucet-form";
 import { FaucetStatsDisplay } from "@/components/faucet-stats";
+import { AddNetworkButton } from "@/components/add-network-button";
 import { Footer } from "@/components/footer";
 
 export default function Home() {
@@ -85,6 +86,9 @@ export default function Home() {
               {claimAmount} GEN per claim
             </span>
           </div>
+
+          {/* Add network */}
+          <AddNetworkButton />
 
           {/* Stats */}
           <FaucetStatsDisplay />
