@@ -60,15 +60,18 @@ function GenLayerLogo() {
 
 export function Header() {
   return (
-    <header className="border-b border-border-default bg-surface">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-        <Link href="/" className="flex items-center gap-3 text-text-primary">
+    <header className="bg-white/80 backdrop-blur-xl border-b border-black/[0.04]">
+      <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3.5">
+        <Link href="/" className="flex items-center gap-3 text-text-primary transition-opacity hover:opacity-70">
           <GenLayerLogo />
         </Link>
-        <div className="flex items-center gap-3">
-          <span className="rounded-full bg-surface-secondary px-3 py-1.5 text-xs font-medium tracking-[0.24px] text-text-secondary">
-            Testnet Asimov
-          </span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 rounded-full bg-surface-secondary/80 px-3 py-1.5 ring-1 ring-black/[0.04]">
+            <span className="live-dot h-1.5 w-1.5 rounded-full bg-success" />
+            <span className="text-[12px] font-medium tracking-wide text-text-secondary">
+              Testnet Asimov
+            </span>
+          </div>
         </div>
       </div>
     </header>

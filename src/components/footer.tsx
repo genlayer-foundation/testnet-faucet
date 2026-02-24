@@ -12,9 +12,9 @@ export function Footer() {
   ];
 
   return (
-    <footer className="border-t border-border-default bg-surface">
+    <footer className="border-t border-black/[0.04] bg-white/60 backdrop-blur-sm">
       <div className="mx-auto flex max-w-5xl flex-col items-center gap-4 px-6 py-5 sm:flex-row sm:justify-between">
-        <p className="text-xs tracking-[0.24px] text-text-muted">
+        <p className="text-[12px] text-text-muted">
           GenLayer Foundation
         </p>
         <nav className="flex gap-6">
@@ -24,7 +24,7 @@ export function Footer() {
               href={link.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs tracking-[0.24px] text-text-muted transition-colors hover:text-text-primary"
+              className="text-[12px] text-text-muted transition-colors hover:text-text-primary"
             >
               {link.label}
             </a>

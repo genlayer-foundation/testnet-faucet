@@ -45,7 +45,7 @@ export function AddNetworkButton() {
     <button
       onClick={addNetwork}
       disabled={status === "adding"}
-      className="flex h-[40px] w-full items-center justify-center gap-2 rounded-full bg-surface-dark px-4 text-[14px] font-medium tracking-[0.28px] text-white transition-colors hover:bg-[#2a2a2b] disabled:opacity-50"
+      className="group flex h-[40px] w-full items-center justify-center gap-2 rounded-xl border border-black/[0.08] bg-white px-4 text-[13px] font-medium text-text-primary transition-all hover:border-brand-purple/20 hover:bg-brand-purple-light hover:text-brand-purple disabled:opacity-50"
     >
       {status === "adding" && (
         <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -65,7 +65,7 @@ export function AddNetworkButton() {
         </svg>
       )}
       {status === "idle" && (
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" className="text-text-muted group-hover:text-brand-purple transition-colors">
           <path
             d="M8 3.5V12.5M3.5 8H12.5"
             stroke="currentColor"
@@ -75,7 +75,7 @@ export function AddNetworkButton() {
         </svg>
       )}
       {status === "added" && (
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" className="text-success">
           <path
             d="M13 4.5L6.5 11L3 7.5"
             stroke="currentColor"

@@ -30,10 +30,10 @@ export function FaucetStatsDisplay() {
         {Array.from({ length: 2 }).map((_, i) => (
           <div
             key={i}
-            className="animate-pulse rounded-xl border border-border-light bg-surface p-4"
+            className="rounded-xl border border-black/[0.04] bg-white p-4"
           >
-            <div className="h-3 w-16 rounded bg-surface-secondary" />
-            <div className="mt-2 h-5 w-10 rounded bg-surface-secondary" />
+            <div className="skeleton-shimmer h-3 w-16 rounded" />
+            <div className="skeleton-shimmer mt-2.5 h-6 w-12 rounded" />
           </div>
         ))}
       </div>
@@ -43,8 +43,26 @@ export function FaucetStatsDisplay() {
   if (!stats) return null;
 
   const items = [
-    { label: "Total Claims", value: stats.totalClaims.toLocaleString() },
-    { label: "Unique Addresses", value: stats.uniqueAddresses.toLocaleString() },
+    {
+      label: "Total Claims",
+      value: stats.totalClaims.toLocaleString(),
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-brand-purple/50">
+          <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        </svg>
+      ),
+    },
+    {
+      label: "Unique Addresses",
+      value: stats.uniqueAddresses.toLocaleString(),
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-brand-purple/50">
+          <circle cx="5" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.3" />
+          <circle cx="9.5" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.3" />
+          <path d="M1 12.5c0-2.2 1.8-4 4-4s4 1.8 4 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        </svg>
+      ),
+    },
   ];
 
   return (
@@ -52,12 +70,15 @@ export function FaucetStatsDisplay() {
       {items.map((item) => (
         <div
           key={item.label}
-          className="rounded-xl border border-border-light bg-surface p-4"
+          className="stat-card rounded-xl border border-black/[0.04] bg-white p-4"
         >
-          <p className="text-[12px] tracking-[0.24px] text-text-muted">
-            {item.label}
-          </p>
-          <p className="mt-1 text-[17px] font-semibold tracking-[-0.32px] text-text-primary">
+          <div className="flex items-center gap-1.5">
+            {item.icon}
+            <p className="text-[11px] font-medium uppercase tracking-wider text-text-muted">
+              {item.label}
+            </p>
+          </div>
+          <p className="mt-2 text-[20px] font-semibold tracking-tight text-text-primary">
             {item.value}
           </p>
         </div>

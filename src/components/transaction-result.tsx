@@ -24,7 +24,7 @@ export function TransactionResult({
   };
 
   return (
-    <div className="rounded-xl border border-success/20 bg-success-light px-4 py-4">
+    <div className="rounded-xl border border-success/15 bg-success-light px-4 py-4">
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-success">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -38,7 +38,7 @@ export function TransactionResult({
           </svg>
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[14px] font-medium tracking-[0.28px] text-success">
+          <p className="text-[14px] font-semibold text-success">
             {amount} GEN sent successfully!
           </p>
           <div className="mt-2 flex items-center gap-2">
@@ -47,7 +47,7 @@ export function TransactionResult({
             </code>
             <button
               onClick={copyHash}
-              className="rounded px-1.5 py-0.5 text-[12px] text-text-secondary transition-colors hover:bg-surface-secondary hover:text-text-primary"
+              className="rounded-md px-1.5 py-0.5 text-[11px] font-medium text-text-muted transition-colors hover:bg-success/10 hover:text-success"
             >
               {copied ? "Copied!" : "Copy"}
             </button>
@@ -56,10 +56,10 @@ export function TransactionResult({
             href={explorerUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-2 inline-flex items-center gap-1 text-[12px] font-medium tracking-[0.24px] text-brand-purple transition-colors hover:text-brand-purple-hover"
+            className="mt-2 inline-flex items-center gap-1 text-[12px] font-medium text-brand-purple transition-colors hover:text-brand-purple-hover"
           >
             View on Explorer
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
               <path
                 d="M3.5 8.5L8.5 3.5M8.5 3.5H4.5M8.5 3.5V7.5"
                 stroke="currentColor"

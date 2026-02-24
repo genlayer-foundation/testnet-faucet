@@ -73,7 +73,7 @@ export function FaucetForm() {
         <div>
           <label
             htmlFor="address"
-            className="mb-2 block text-[14px] font-medium tracking-[0.28px] text-text-primary"
+            className="mb-2 block text-[13px] font-medium text-text-primary"
           >
             Wallet Address
           </label>
@@ -87,7 +87,7 @@ export function FaucetForm() {
             }}
             placeholder="0x..."
             disabled={loading || !!result}
-            className="h-[40px] w-full rounded-lg border border-border-light bg-surface-secondary px-3 font-mono text-[14px] text-text-primary placeholder:text-text-placeholder transition-all focus:border-brand-purple focus:ring-1 focus:ring-brand-purple focus:outline-none disabled:opacity-50"
+            className="input-field h-[44px] w-full rounded-xl border border-black/[0.08] bg-surface-secondary/60 px-4 font-mono text-[14px] text-text-primary placeholder:text-text-placeholder focus:border-brand-purple focus:outline-none disabled:opacity-50"
           />
         </div>
 
@@ -108,7 +108,7 @@ export function FaucetForm() {
           <button
             type="submit"
             disabled={!address.trim() || !turnstileToken || loading}
-            className="flex h-[40px] w-full items-center justify-center gap-2 rounded-full bg-brand-purple px-4 text-[14px] font-medium tracking-[0.28px] text-white transition-colors hover:bg-brand-purple-hover disabled:cursor-not-allowed disabled:opacity-40"
+            className="btn-glow flex h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-brand-purple to-[#8a3ae0] px-4 text-[14px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none disabled:[transform:none]"
           >
             {loading ? (
               <>
@@ -141,10 +141,10 @@ export function FaucetForm() {
       </form>
 
       {error && (
-        <div className="rounded-xl border border-error/20 bg-error-light px-4 py-3">
-          <p className="text-[14px] tracking-[0.28px] text-error">{error}</p>
+        <div className="rounded-xl border border-error/15 bg-error-light px-4 py-3">
+          <p className="text-[13px] font-medium text-error">{error}</p>
           {retryAfter && retryAfter > 0 && (
-            <p className="mt-1 text-[12px] tracking-[0.24px] text-text-secondary">
+            <p className="mt-1 text-[12px] text-text-secondary">
               Try again in {formatRetryTime(retryAfter)}
             </p>
           )}
@@ -165,7 +165,7 @@ export function FaucetForm() {
             setAddress("");
             resetForm();
           }}
-          className="flex h-[40px] w-full items-center justify-center rounded-full bg-surface-secondary px-4 text-[14px] font-medium tracking-[0.28px] text-text-primary transition-colors hover:bg-border-default"
+          className="flex h-[40px] w-full items-center justify-center rounded-xl bg-surface-secondary/80 px-4 text-[13px] font-medium text-text-secondary ring-1 ring-black/[0.04] transition-all hover:bg-surface-secondary hover:text-text-primary"
         >
           Claim for another address
         </button>

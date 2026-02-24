@@ -11,17 +11,18 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
 
-      <main className="relative flex flex-1 flex-col items-center justify-center px-4 py-16 sm:py-20">
-        {/* Subtle gradient mesh background */}
+      <main className="relative flex flex-1 flex-col items-center justify-center px-4 py-16 sm:py-24">
+        {/* Background layers */}
         <div className="gradient-mesh pointer-events-none absolute inset-0" />
+        <div className="noise-overlay pointer-events-none absolute inset-0" />
 
-        <div className="relative z-10 w-full max-w-[480px] space-y-6">
+        <div className="relative z-10 w-full max-w-[440px] space-y-8">
           {/* Hero */}
           <div className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-purple-light">
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-purple/10 to-brand-purple/5 ring-1 ring-brand-purple/10">
               <svg
-                width="24"
-                height="24"
+                width="26"
+                height="26"
                 viewBox="0 0 256 256"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -40,23 +41,23 @@ export default function Home() {
                 />
               </svg>
             </div>
-            <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.64px] text-text-primary sm:text-[32px]">
+            <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.02em] text-text-primary sm:text-[32px]">
               Testnet Faucet
             </h1>
-            <p className="mt-2 text-[14px] tracking-[0.28px] text-text-secondary">
+            <p className="mx-auto mt-2.5 max-w-[280px] text-[15px] leading-relaxed text-text-secondary">
               Get {claimAmount} GEN tokens for testing on Testnet Asimov
             </p>
           </div>
 
           {/* Form card */}
-          <div className="rounded-2xl border border-border-light bg-surface p-6 shadow-[0_4px_24px_rgba(0,0,0,0.03)]">
+          <div className="card-elevated rounded-2xl p-6">
             <FaucetForm />
           </div>
 
-          {/* Info row */}
-          <div className="flex items-center justify-center gap-4 text-[12px] tracking-[0.24px] text-text-muted">
-            <span className="flex items-center gap-1.5">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          {/* Info pills */}
+          <div className="flex items-center justify-center gap-3">
+            <span className="flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1.5 text-[12px] font-medium tracking-wide text-text-secondary ring-1 ring-black/[0.04]">
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none" className="text-text-muted">
                 <circle
                   cx="7"
                   cy="7"
@@ -73,9 +74,8 @@ export default function Home() {
               </svg>
               Once per 24h
             </span>
-            <span className="text-border-default">|</span>
-            <span className="flex items-center gap-1.5">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <span className="flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1.5 text-[12px] font-medium tracking-wide text-text-secondary ring-1 ring-black/[0.04]">
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none" className="text-brand-purple/60">
                 <path
                   d="M7 1.5L8.5 5H12L9 7.5L10 11L7 9L4 11L5 7.5L2 5H5.5L7 1.5Z"
                   stroke="currentColor"
