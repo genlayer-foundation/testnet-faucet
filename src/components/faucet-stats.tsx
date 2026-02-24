@@ -26,8 +26,8 @@ export function FaucetStatsDisplay() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
+      <div className="grid grid-cols-2 gap-3">
+        {Array.from({ length: 2 }).map((_, i) => (
           <div
             key={i}
             className="animate-pulse rounded-xl border border-border-light bg-surface p-4"
@@ -45,15 +45,10 @@ export function FaucetStatsDisplay() {
   const items = [
     { label: "Total Claims", value: stats.totalClaims.toLocaleString() },
     { label: "Unique Addresses", value: stats.uniqueAddresses.toLocaleString() },
-    { label: "Claims Today", value: stats.claimsToday.toLocaleString() },
-    {
-      label: "Faucet Balance",
-      value: `${Number(stats.faucetBalance).toLocaleString(undefined, { maximumFractionDigits: 0 })} GEN`,
-    },
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3">
       {items.map((item) => (
         <div
           key={item.label}
