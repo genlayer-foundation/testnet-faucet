@@ -24,16 +24,10 @@ export function TransactionResult({
   };
 
   return (
-    <div className="rounded-xl border border-success/20 bg-success-light p-5">
+    <div className="rounded-xl border border-success/20 bg-success-light px-4 py-4">
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-success">
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 12 12"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
             <path
               d="M10 3L4.5 8.5L2 6"
               stroke="white"
@@ -44,17 +38,16 @@ export function TransactionResult({
           </svg>
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium tracking-[0.28px] text-success">
+          <p className="text-[14px] font-medium tracking-[0.28px] text-success">
             {amount} GEN sent successfully!
           </p>
           <div className="mt-2 flex items-center gap-2">
-            <code className="font-mono text-xs text-text-secondary">
+            <code className="font-mono text-[12px] text-text-secondary">
               {truncatedHash}
             </code>
             <button
               onClick={copyHash}
-              className="text-xs text-text-secondary transition-colors hover:text-text-primary"
-              title="Copy transaction hash"
+              className="rounded px-1.5 py-0.5 text-[12px] text-text-secondary transition-colors hover:bg-surface-secondary hover:text-text-primary"
             >
               {copied ? "Copied!" : "Copy"}
             </button>
@@ -63,16 +56,10 @@ export function TransactionResult({
             href={explorerUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-2 inline-flex items-center gap-1 text-xs font-medium tracking-[0.24px] text-brand-purple transition-colors hover:text-brand-purple-hover"
+            className="mt-2 inline-flex items-center gap-1 text-[12px] font-medium tracking-[0.24px] text-brand-purple transition-colors hover:text-brand-purple-hover"
           >
             View on Explorer
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 12 12"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <path
                 d="M3.5 8.5L8.5 3.5M8.5 3.5H4.5M8.5 3.5V7.5"
                 stroke="currentColor"

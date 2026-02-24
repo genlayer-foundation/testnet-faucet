@@ -47,9 +47,7 @@ export function FaucetForm() {
         setResult(data);
       } else {
         setError(data.error || "Something went wrong.");
-        if (data.retryAfter) {
-          setRetryAfter(data.retryAfter);
-        }
+        if (data.retryAfter) setRetryAfter(data.retryAfter);
         turnstileRef.current?.reset();
         setTurnstileToken(null);
       }
@@ -70,12 +68,12 @@ export function FaucetForm() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label
             htmlFor="address"
-            className="mb-2 block text-sm font-medium tracking-[0.28px] text-text-primary"
+            className="mb-2 block text-[14px] font-medium tracking-[0.28px] text-text-primary"
           >
             Wallet Address
           </label>
@@ -89,37 +87,35 @@ export function FaucetForm() {
             }}
             placeholder="0x..."
             disabled={loading || !!result}
-            className="h-10 w-full rounded-lg border border-border-light bg-surface-secondary px-3 font-mono text-sm text-text-primary placeholder:text-text-placeholder transition-colors focus:border-brand-purple focus:ring-1 focus:ring-brand-purple focus:outline-none disabled:opacity-50"
+            className="h-[40px] w-full rounded-lg border border-border-light bg-surface-secondary px-3 font-mono text-[14px] text-text-primary placeholder:text-text-placeholder transition-all focus:border-brand-purple focus:ring-1 focus:ring-brand-purple focus:outline-none disabled:opacity-50"
           />
         </div>
 
         {siteKey && (
-          <Turnstile
-            ref={turnstileRef}
-            siteKey={siteKey}
-            onSuccess={setTurnstileToken}
-            onError={() => setTurnstileToken(null)}
-            onExpire={() => setTurnstileToken(null)}
-            options={{
-              theme: "light",
-              size: "normal",
-            }}
-          />
+          <div className="flex justify-center">
+            <Turnstile
+              ref={turnstileRef}
+              siteKey={siteKey}
+              onSuccess={setTurnstileToken}
+              onError={() => setTurnstileToken(null)}
+              onExpire={() => setTurnstileToken(null)}
+              options={{ theme: "light", size: "normal" }}
+            />
+          </div>
         )}
 
         {!result && (
           <button
             type="submit"
             disabled={!address.trim() || !turnstileToken || loading}
-            className="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-brand-purple px-4 text-sm font-medium tracking-[0.28px] text-white transition-colors hover:bg-brand-purple-hover disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-[40px] w-full items-center justify-center gap-2 rounded-full bg-brand-purple px-4 text-[14px] font-medium tracking-[0.28px] text-white transition-colors hover:bg-brand-purple-hover disabled:cursor-not-allowed disabled:opacity-40"
           >
             {loading ? (
               <>
                 <svg
                   className="h-4 w-4 animate-spin"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
                   viewBox="0 0 24 24"
+                  fill="none"
                 >
                   <circle
                     className="opacity-25"
@@ -135,7 +131,7 @@ export function FaucetForm() {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                   />
                 </svg>
-                Sending...
+                Sending GEN...
               </>
             ) : (
               `Claim ${claimAmount} GEN`
@@ -145,10 +141,10 @@ export function FaucetForm() {
       </form>
 
       {error && (
-        <div className="rounded-xl border border-error/20 bg-error-light p-4">
-          <p className="text-sm tracking-[0.28px] text-error">{error}</p>
+        <div className="rounded-xl border border-error/20 bg-error-light px-4 py-3">
+          <p className="text-[14px] tracking-[0.28px] text-error">{error}</p>
           {retryAfter && retryAfter > 0 && (
-            <p className="mt-1 text-xs tracking-[0.24px] text-text-secondary">
+            <p className="mt-1 text-[12px] tracking-[0.24px] text-text-secondary">
               Try again in {formatRetryTime(retryAfter)}
             </p>
           )}
@@ -169,7 +165,7 @@ export function FaucetForm() {
             setAddress("");
             resetForm();
           }}
-          className="flex h-10 w-full items-center justify-center rounded-full bg-surface-secondary px-4 text-sm font-medium tracking-[0.28px] text-text-primary transition-colors hover:bg-border-default"
+          className="flex h-[40px] w-full items-center justify-center rounded-full bg-surface-secondary px-4 text-[14px] font-medium tracking-[0.28px] text-text-primary transition-colors hover:bg-border-default"
         >
           Claim for another address
         </button>
