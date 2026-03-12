@@ -20,7 +20,7 @@ export function AddNetworkButton() {
         params: [
           {
             chainId: `0x${(Number(process.env.NEXT_PUBLIC_CHAIN_ID) || 4221).toString(16)}`,
-            chainName: "GenLayer Testnet Asimov",
+            chainName: "GenLayer Testnet Chain",
             nativeCurrency: {
               name: "GEN",
               symbol: "GEN",
@@ -29,7 +29,7 @@ export function AddNetworkButton() {
             rpcUrls: ["https://zksync-os-testnet-genlayer.zksync.dev"],
             blockExplorerUrls: [
               process.env.NEXT_PUBLIC_EXPLORER_URL ||
-                "https://explorer-asimov.genlayer.com",
+                "https://zksync-os-testnet-genlayer.explorer.zksync.dev",
             ],
           },
         ],
@@ -85,7 +85,7 @@ export function AddNetworkButton() {
           />
         </svg>
       )}
-      {status === "idle" && "Add GenLayer Testnet to Wallet"}
+      {status === "idle" && "Add GenLayer Testnets Chain to Wallet"}
       {status === "adding" && "Adding..."}
       {status === "added" && "Network Added!"}
       {status === "error" && "Failed - Try Again"}

@@ -42,10 +42,10 @@ export default function Home() {
               </svg>
             </div>
             <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.02em] text-text-primary sm:text-[32px]">
-              Testnet Faucet
+              Testnets Faucet
             </h1>
             <p className="mx-auto mt-2.5 max-w-[280px] text-[15px] leading-relaxed text-text-secondary">
-              Get {claimAmount} GEN tokens for testing on Testnet Asimov
+              Get {claimAmount} GEN tokens for testing on GenLayer Testnets
             </p>
           </div>
 

@@ -6,7 +6,7 @@ export function Footer() {
       label: "Explorer",
       href:
         process.env.NEXT_PUBLIC_EXPLORER_URL ||
-        "https://explorer-asimov.genlayer.com",
+        "https://zksync-os-testnet-genlayer.explorer.zksync.dev",
     },
     { label: "GitHub", href: "https://github.com/genlayerlabs" },
   ];

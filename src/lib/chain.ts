@@ -3,7 +3,7 @@ import { defineChain } from "viem";
 export function getGenlayerChain() {
   return defineChain({
     id: Number(process.env.NEXT_PUBLIC_CHAIN_ID) || 4221,
-    name: "GenLayer Testnet Asimov",
+    name: "GenLayer Testnet Chain",
     nativeCurrency: {
       name: "GEN Token",
       symbol: "GEN",
@@ -22,7 +22,7 @@ export function getGenlayerChain() {
         name: "GenLayer Explorer",
         url:
           process.env.NEXT_PUBLIC_EXPLORER_URL ||
-          "https://explorer-asimov.genlayer.com",
+          "https://zksync-os-testnet-genlayer.explorer.zksync.dev",
       },
     },
     testnet: true,

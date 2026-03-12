@@ -69,6 +69,12 @@ export function Header() {
           <div className="flex items-center gap-2 rounded-full bg-surface-secondary/80 px-3 py-1.5 ring-1 ring-black/[0.04]">
             <span className="live-dot h-1.5 w-1.5 rounded-full bg-success" />
             <span className="text-[12px] font-medium tracking-wide text-text-secondary">
+              Testnet Bradbury
+            </span>
+          </div>
+          <div className="flex items-center gap-2 rounded-full bg-surface-secondary/80 px-3 py-1.5 ring-1 ring-black/[0.04]">
+            <span className="live-dot h-1.5 w-1.5 rounded-full bg-success" />
+            <span className="text-[12px] font-medium tracking-wide text-text-secondary">
               Testnet Asimov
             </span>
           </div>

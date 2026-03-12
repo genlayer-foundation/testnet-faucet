@@ -104,7 +104,7 @@ export async function POST(
         recordClaim(normalizedAddress),
       ]);
 
-      const explorerUrl = `${process.env.NEXT_PUBLIC_EXPLORER_URL || "https://explorer-asimov.genlayer.com"}/tx/${txHash}`;
+      const explorerUrl = `${process.env.NEXT_PUBLIC_EXPLORER_URL || "https://zksync-os-testnet-genlayer.explorer.zksync.dev"}/tx/${txHash}`;
       return NextResponse.json({ success: true, txHash, explorerUrl });
     } finally {
       await redis.del(lockKey);
