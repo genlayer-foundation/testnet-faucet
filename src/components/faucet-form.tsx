@@ -35,10 +35,17 @@ export function FaucetForm() {
     setRetryAfter(null);
 
     try {
+      const formData = new FormData(e.target as HTMLFormElement);
+      const honeypot = formData.get("website") as string;
+
       const res = await fetch("/api/claim", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address: address.trim(), turnstileToken }),
+        body: JSON.stringify({
+          address: address.trim(),
+          turnstileToken,
+          ...(honeypot && { website: honeypot }),
+        }),
       });
 
       const data: ClaimResponse = await res.json();
@@ -91,6 +98,18 @@ export function FaucetForm() {
           />
         </div>
 
+        {/* Honeypot field — hidden from real users, bots auto-fill it */}
+        <div style={{ display: "none" }} aria-hidden="true">
+          <label htmlFor="website">Website</label>
+          <input
+            type="text"
+            id="website"
+            name="website"
+            tabIndex={-1}
+            autoComplete="off"
+          />
+        </div>
+
         {siteKey && (
           <div className="flex justify-center">
             <Turnstile
@@ -99,7 +118,7 @@ export function FaucetForm() {
               onSuccess={setTurnstileToken}
               onError={() => setTurnstileToken(null)}
               onExpire={() => setTurnstileToken(null)}
-              options={{ theme: "light", size: "normal" }}
+              options={{ theme: "light", size: "normal", action: "claim" }}
             />
           </div>
         )}

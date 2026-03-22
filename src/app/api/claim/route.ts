@@ -20,24 +20,34 @@ export async function POST(
         { status: 400 }
       );
     }
-    const { address, turnstileToken } = parsed.data;
+    const { address, turnstileToken, website } = parsed.data;
     const normalizedAddress = address.toLowerCase() as `0x${string}`;
 
-    // 2. Verify CAPTCHA
+    // 2. Honeypot check — bots fill hidden fields, real users don't
+    if (website) {
+      return NextResponse.json({
+        success: true,
+        txHash: `0x${"0".repeat(64)}`,
+        explorerUrl: `${process.env.NEXT_PUBLIC_EXPLORER_URL || "https://zksync-os-testnet-genlayer.explorer.zksync.dev"}/tx/0x${"0".repeat(64)}`,
+      });
+    }
+
+    // 3. Verify CAPTCHA
     const clientIp =
+      request.headers.get("cf-connecting-ip") ??
       request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
       request.headers.get("x-real-ip") ??
       "unknown";
 
-    const turnstileValid = await verifyTurnstile(turnstileToken, clientIp);
-    if (!turnstileValid) {
+    const turnstileResult = await verifyTurnstile(turnstileToken, clientIp);
+    if (!turnstileResult.success) {
       return NextResponse.json(
         { success: false, error: "CAPTCHA verification failed. Please try again." },
         { status: 400 }
       );
     }
 
-    // 3. Check IP rate limit (read-only, does not consume)
+    // 4. Check IP rate limit (read-only, does not consume)
     const ipCheck = await checkIpRateLimit(clientIp);
     if (!ipCheck.allowed) {
       return NextResponse.json(
@@ -50,7 +60,7 @@ export async function POST(
       );
     }
 
-    // 4. Check address rate limit (read-only, does not consume)
+    // 5. Check address rate limit (read-only, does not consume)
     const addrCheck = await checkAddressRateLimit(normalizedAddress);
     if (!addrCheck.allowed) {
       return NextResponse.json(
@@ -63,7 +73,7 @@ export async function POST(
       );
     }
 
-    // 5. Check balance threshold
+    // 6. Check balance threshold
     const eligible = await isRecipientEligible(normalizedAddress);
     if (!eligible) {
       const threshold = Number(process.env.BALANCE_THRESHOLD) || 1000;
@@ -73,7 +83,7 @@ export async function POST(
       );
     }
 
-    // 6. Acquire processing lock
+    // 7. Acquire processing lock
     const redis = getRedis();
     const lockKey = `lock:${normalizedAddress}`;
     const lockAcquired = await redis.set(lockKey, "1", { nx: true, ex: 60 });
@@ -85,7 +95,7 @@ export async function POST(
     }
 
     try {
-      // 7. Check faucet balance
+      // 8. Check faucet balance
       const faucetBalance = await getFaucetBalance();
       const claimAmount = Number(process.env.CLAIM_AMOUNT) || 100;
       if (parseFloat(faucetBalance) < claimAmount) {
@@ -95,10 +105,10 @@ export async function POST(
         );
       }
 
-      // 8. Send transaction
+      // 9. Send transaction
       const txHash = await sendGEN(normalizedAddress);
 
-      // 9. Only record rate limit and stats AFTER successful send
+      // 10. Only record rate limit and stats AFTER successful send
       await Promise.all([
         recordRateLimit(normalizedAddress, clientIp),
         recordClaim(normalizedAddress),

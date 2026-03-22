@@ -9,6 +9,7 @@ export const claimSchema = z.object({
       message: "Invalid Ethereum address",
     }),
   turnstileToken: z.string().min(1, "CAPTCHA verification required"),
+  website: z.string().optional(),
 });
 
 export type ClaimInput = z.infer<typeof claimSchema>;
