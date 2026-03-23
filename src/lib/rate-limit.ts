@@ -2,6 +2,7 @@ import { getRedis } from "./redis";
 
 const ADDR_PREFIX = "faucet:addr:";
 const IP_PREFIX = "faucet:ip:";
+const GH_PREFIX = "faucet:gh:";
 const TTL_SECONDS = 86400; // 24 hours
 const IP_MAX_CLAIMS = 5;
 
@@ -32,9 +33,23 @@ export async function checkIpRateLimit(
   return { allowed: true };
 }
 
+export async function checkGitHubUserRateLimit(
+  githubUserId: string
+): Promise<{ allowed: boolean; retryAfter?: number }> {
+  const redis = getRedis();
+  const key = `${GH_PREFIX}${githubUserId}`;
+  const ttl = await redis.ttl(key);
+
+  if (ttl > 0) {
+    return { allowed: false, retryAfter: ttl };
+  }
+  return { allowed: true };
+}
+
 export async function recordRateLimit(
   address: string,
-  ip: string
+  ip: string,
+  githubUserId?: string
 ): Promise<void> {
   const redis = getRedis();
   const pipeline = redis.pipeline();
@@ -42,9 +57,14 @@ export async function recordRateLimit(
   // Mark address as claimed (1 per 24h)
   pipeline.set(`${ADDR_PREFIX}${address}`, "1", { ex: TTL_SECONDS });
 
-  // Increment IP counter (3 per 24h)
+  // Increment IP counter (5 per 24h)
   const ipKey = `${IP_PREFIX}${ip}`;
   pipeline.incr(ipKey);
+
+  // Mark GitHub user as claimed (1 per 24h)
+  if (githubUserId) {
+    pipeline.set(`${GH_PREFIX}${githubUserId}`, "1", { ex: TTL_SECONDS });
+  }
 
   await pipeline.exec();
 

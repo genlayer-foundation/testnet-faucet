@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { UserMenu } from "./user-menu";
 
 function GenLayerLogo() {
   return (
@@ -78,6 +79,7 @@ export function Header() {
               Testnet Asimov
             </span>
           </div>
+          <UserMenu />
         </div>
       </div>
     </header>
