@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { claimSchema } from "@/lib/validation";
 import { verifyTurnstile } from "@/lib/turnstile";
-import { checkAddressRateLimit, checkIpRateLimit, recordRateLimit } from "@/lib/rate-limit";
+import { checkAddressRateLimit, checkIpRateLimit, checkGitHubUserRateLimit, recordRateLimit } from "@/lib/rate-limit";
 import { sendGEN, isRecipientEligible, getFaucetBalance } from "@/lib/faucet";
 import { recordClaim } from "@/lib/stats";
 import { getRedis } from "@/lib/redis";
@@ -23,7 +24,17 @@ export async function POST(
     const { address, turnstileToken, website } = parsed.data;
     const normalizedAddress = address.toLowerCase() as `0x${string}`;
 
-    // 2. Honeypot check — bots fill hidden fields, real users don't
+    // 2. Require GitHub authentication
+    const session = await auth();
+    if (!session?.user?.githubId) {
+      return NextResponse.json(
+        { success: false, error: "You must sign in with GitHub to claim GEN." },
+        { status: 401 }
+      );
+    }
+    const githubUserId = session.user.githubId;
+
+    // 3. Honeypot check — bots fill hidden fields, real users don't
     if (website) {
       return NextResponse.json({
         success: true,
@@ -32,7 +43,7 @@ export async function POST(
       });
     }
 
-    // 3. Verify CAPTCHA
+    // 4. Verify CAPTCHA
     const clientIp =
       request.headers.get("cf-connecting-ip") ??
       request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
@@ -47,7 +58,7 @@ export async function POST(
       );
     }
 
-    // 4. Check IP rate limit (read-only, does not consume)
+    // 5. Check IP rate limit (read-only, does not consume)
     const ipCheck = await checkIpRateLimit(clientIp);
     if (!ipCheck.allowed) {
       return NextResponse.json(
@@ -60,7 +71,7 @@ export async function POST(
       );
     }
 
-    // 5. Check address rate limit (read-only, does not consume)
+    // 6. Check address rate limit (read-only, does not consume)
     const addrCheck = await checkAddressRateLimit(normalizedAddress);
     if (!addrCheck.allowed) {
       return NextResponse.json(
@@ -73,7 +84,20 @@ export async function POST(
       );
     }
 
-    // 6. Check balance threshold
+    // 7. Check GitHub user rate limit (1 claim per 24h per GitHub account)
+    const ghCheck = await checkGitHubUserRateLimit(githubUserId);
+    if (!ghCheck.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Your GitHub account has already claimed GEN in the last 24 hours.",
+          retryAfter: ghCheck.retryAfter,
+        },
+        { status: 429 }
+      );
+    }
+
+    // 8. Check balance threshold
     const eligible = await isRecipientEligible(normalizedAddress);
     if (!eligible) {
       const threshold = Number(process.env.BALANCE_THRESHOLD) || 1000;
@@ -83,7 +107,7 @@ export async function POST(
       );
     }
 
-    // 7. Acquire processing lock
+    // 9. Acquire processing lock
     const redis = getRedis();
     const lockKey = `lock:${normalizedAddress}`;
     const lockAcquired = await redis.set(lockKey, "1", { nx: true, ex: 60 });
@@ -95,7 +119,7 @@ export async function POST(
     }
 
     try {
-      // 8. Check faucet balance
+      // 10. Check faucet balance
       const faucetBalance = await getFaucetBalance();
       const claimAmount = Number(process.env.CLAIM_AMOUNT) || 100;
       if (parseFloat(faucetBalance) < claimAmount) {
@@ -105,12 +129,12 @@ export async function POST(
         );
       }
 
-      // 9. Send transaction
+      // 11. Send transaction
       const txHash = await sendGEN(normalizedAddress);
 
-      // 10. Only record rate limit and stats AFTER successful send
+      // 12. Only record rate limit and stats AFTER successful send
       await Promise.all([
-        recordRateLimit(normalizedAddress, clientIp),
+        recordRateLimit(normalizedAddress, clientIp, githubUserId),
         recordClaim(normalizedAddress),
       ]);
 
