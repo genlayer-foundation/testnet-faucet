@@ -49,6 +49,11 @@ export default async function AuthErrorPage({
           {title}
         </h1>
         <p className="mb-6 text-[14px] text-text-secondary">{description}</p>
+        {error && !errorMessages[error] && (
+          <p className="mb-4 rounded-lg bg-surface-secondary px-3 py-2 font-mono text-[12px] text-text-secondary">
+            Error code: {error}
+          </p>
+        )}
         <Link
           href="/"
           className="inline-flex h-[40px] items-center justify-center rounded-xl bg-surface-secondary/80 px-6 text-[13px] font-medium text-text-secondary ring-1 ring-black/[0.04] transition-all hover:bg-surface-secondary hover:text-text-primary"
