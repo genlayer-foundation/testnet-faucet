@@ -11,6 +11,11 @@ const errorMessages: Record<string, { title: string; description: string }> = {
     description:
       "Your GitHub account needs at least 1 public repository to use the faucet. This helps us verify you are a real developer.",
   },
+  OAuthCallbackError: {
+    title: "GitHub Sign-In Failed",
+    description:
+      "GitHub was unable to complete the sign-in process. This can happen if you denied access or if there was a temporary issue. Please try again.",
+  },
 }
 
 const defaultError = {
