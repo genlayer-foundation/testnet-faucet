@@ -1,16 +1,9 @@
 import NextAuth from "next-auth"
 import GitHub from "next-auth/providers/github"
 
-console.log("[auth] Env check:", {
-  hasGithubId: !!process.env.AUTH_GITHUB_ID,
-  hasGithubSecret: !!process.env.AUTH_GITHUB_SECRET,
-  hasAuthSecret: !!process.env.AUTH_SECRET,
-  hasAuthUrl: !!process.env.AUTH_URL,
-})
-
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  debug: true,
   trustHost: true,
+  useSecureCookies: true,
   providers: [
     GitHub({
       clientId: process.env.AUTH_GITHUB_ID,
@@ -22,8 +15,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error: "/auth/error",
   },
   logger: {
-    error: (error) => {
-      console.error("[auth] Error:", error.message)
+    error: (error: any) => {
+      console.error("[auth] Error:", {
+        message: error.message,
+        type: error.type,
+        cause: error.cause?.message,
+      })
     },
     warn: (code) => {
       console.warn("[auth] Warning:", code)
