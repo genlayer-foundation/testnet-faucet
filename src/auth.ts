@@ -1,10 +1,22 @@
 import NextAuth from "next-auth"
 import GitHub from "next-auth/providers/github"
 
+console.log("[auth] Env check:", {
+  hasGithubId: !!process.env.AUTH_GITHUB_ID,
+  hasGithubSecret: !!process.env.AUTH_GITHUB_SECRET,
+  hasAuthSecret: !!process.env.AUTH_SECRET,
+  hasAuthUrl: !!process.env.AUTH_URL,
+})
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   debug: true,
   trustHost: true,
-  providers: [GitHub],
+  providers: [
+    GitHub({
+      clientId: process.env.AUTH_GITHUB_ID,
+      clientSecret: process.env.AUTH_GITHUB_SECRET,
+    }),
+  ],
   session: { strategy: "jwt" },
   pages: {
     error: "/auth/error",
