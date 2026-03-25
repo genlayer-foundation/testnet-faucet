@@ -16,10 +16,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   logger: {
     error: (error: any) => {
+      const cause = error.cause
       console.error("[auth] Error:", {
-        message: error.message,
         type: error.type,
-        cause: error.cause?.message,
+        message: error.message,
+        causeErr: cause?.err?.message,
+        causeErrType: cause?.err?.type,
+        causeMessage: cause?.message,
+        cause: JSON.stringify(cause, Object.getOwnPropertyNames(cause ?? {})),
       })
     },
     warn: (code) => {
