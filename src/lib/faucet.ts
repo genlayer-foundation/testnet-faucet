@@ -7,6 +7,7 @@ import {
   type Hash,
 } from "viem";
 import { privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
+import { mainnet } from "viem/chains";
 import { getGenlayerChain } from "./chain";
 
 let account: PrivateKeyAccount | null = null;
@@ -74,4 +75,34 @@ export async function isRecipientEligible(
   const threshold = Number(process.env.BALANCE_THRESHOLD) || 1000;
   const balance = await getRecipientBalance(address);
   return balance < parseEther(String(threshold));
+}
+
+// Ethereum mainnet client for balance verification
+let mainnetPublicClient: ReturnType<typeof createPublicClient> | null = null;
+
+function getMainnetClient() {
+  if (!mainnetPublicClient) {
+    const rpcUrl = process.env.ETHEREUM_RPC_URL || "https://cloudflare-eth.com";
+    if (!process.env.ETHEREUM_RPC_URL) {
+      console.warn("ETHEREUM_RPC_URL not set, falling back to public endpoint");
+    }
+    mainnetPublicClient = createPublicClient({
+      chain: mainnet,
+      transport: http(rpcUrl, { timeout: 5000, retryCount: 1 }),
+    });
+  }
+  return mainnetPublicClient;
+}
+
+export async function checkMainnetEthBalance(
+  address: `0x${string}`
+): Promise<{ eligible: boolean; balance: string }> {
+  const minBalance = Number(process.env.MIN_ETH_BALANCE ?? 0.01);
+  const client = getMainnetClient();
+  const balance = await client.getBalance({ address });
+  const formatted = formatEther(balance);
+  return {
+    eligible: balance >= parseEther(String(minBalance)),
+    balance: formatted,
+  };
 }

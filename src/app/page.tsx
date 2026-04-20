@@ -6,6 +6,7 @@ import { Footer } from "@/components/footer";
 
 export default function Home() {
   const claimAmount = Number(process.env.NEXT_PUBLIC_CLAIM_AMOUNT) || 100;
+  const minEthBalance = Number(process.env.NEXT_PUBLIC_MIN_ETH_BALANCE) || 0.01;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -55,7 +56,7 @@ export default function Home() {
           </div>
 
           {/* Info pills */}
-          <div className="flex items-center justify-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-3">
             <span className="flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1.5 text-[12px] font-medium tracking-wide text-text-secondary ring-1 ring-black/[0.04]">
               <svg width="13" height="13" viewBox="0 0 14 14" fill="none" className="text-text-muted">
                 <circle
@@ -84,6 +85,17 @@ export default function Home() {
                 />
               </svg>
               {claimAmount} GEN per claim
+            </span>
+            <span className="flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1.5 text-[12px] font-medium tracking-wide text-text-secondary ring-1 ring-black/[0.04]">
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none" className="text-text-muted">
+                <path
+                  d="M7 1L4 5.5L1 7L4 8.5L7 13L10 8.5L13 7L10 5.5L7 1Z"
+                  stroke="currentColor"
+                  strokeWidth="1.2"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              Requires {minEthBalance} ETH on mainnet
             </span>
           </div>
 
