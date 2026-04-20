@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { claimSchema } from "@/lib/validation";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { checkAddressRateLimit, checkIpRateLimit, checkGitHubUserRateLimit, recordRateLimit } from "@/lib/rate-limit";
-import { sendGEN, isRecipientEligible, getFaucetBalance } from "@/lib/faucet";
+import { sendGEN, isRecipientEligible, getFaucetBalance, checkMainnetEthBalance } from "@/lib/faucet";
 import { recordClaim } from "@/lib/stats";
 import { getRedis } from "@/lib/redis";
 import type { ClaimResponse } from "@/types";
@@ -97,7 +97,28 @@ export async function POST(
       );
     }
 
-    // 8. Check balance threshold
+    // 8. Check mainnet ETH balance (anti-sybil: must hold real ETH)
+    try {
+      const mainnetCheck = await checkMainnetEthBalance(normalizedAddress);
+      if (!mainnetCheck.eligible) {
+        const minBalance = Number(process.env.MIN_ETH_BALANCE ?? 0.01);
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Your wallet must hold at least ${minBalance} ETH on Ethereum mainnet to claim GEN. Your balance: ${mainnetCheck.balance} ETH.`,
+          },
+          { status: 403 }
+        );
+      }
+    } catch (error) {
+      console.error("Mainnet balance check failed:", error);
+      return NextResponse.json(
+        { success: false, error: "Unable to verify mainnet ETH balance. Please try again later." },
+        { status: 502 }
+      );
+    }
+
+    // 9. Check GEN balance threshold
     const eligible = await isRecipientEligible(normalizedAddress);
     if (!eligible) {
       const threshold = Number(process.env.BALANCE_THRESHOLD) || 1000;
@@ -107,7 +128,7 @@ export async function POST(
       );
     }
 
-    // 9. Acquire processing lock
+    // 10. Acquire processing lock
     const redis = getRedis();
     const lockKey = `lock:${normalizedAddress}`;
     const lockAcquired = await redis.set(lockKey, "1", { nx: true, ex: 60 });
@@ -119,7 +140,7 @@ export async function POST(
     }
 
     try {
-      // 10. Check faucet balance
+      // 11. Check faucet balance
       const faucetBalance = await getFaucetBalance();
       const claimAmount = Number(process.env.CLAIM_AMOUNT) || 100;
       if (parseFloat(faucetBalance) < claimAmount) {
@@ -129,10 +150,10 @@ export async function POST(
         );
       }
 
-      // 11. Send transaction
+      // 12. Send transaction
       const txHash = await sendGEN(normalizedAddress);
 
-      // 12. Only record rate limit and stats AFTER successful send
+      // 13. Only record rate limit and stats AFTER successful send
       await Promise.all([
         recordRateLimit(normalizedAddress, clientIp, githubUserId),
         recordClaim(normalizedAddress),

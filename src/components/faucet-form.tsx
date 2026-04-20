@@ -30,6 +30,7 @@ export function FaucetForm() {
   const turnstileRef = useRef<TurnstileInstance | null>(null);
 
   const claimAmount = Number(process.env.NEXT_PUBLIC_CLAIM_AMOUNT) || 100;
+  const minEthBalance = Number(process.env.NEXT_PUBLIC_MIN_ETH_BALANCE) || 0.01;
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
 
   const resetForm = useCallback(() => {
@@ -121,10 +122,13 @@ export function FaucetForm() {
         <div>
           <label
             htmlFor="address"
-            className="mb-2 block text-[13px] font-medium text-text-primary"
+            className="mb-1.5 block text-[13px] font-medium text-text-primary"
           >
             Wallet Address
           </label>
+          <p className="mb-2 text-[12px] text-text-secondary">
+            Requires at least {minEthBalance} ETH on Ethereum mainnet
+          </p>
           <input
             id="address"
             type="text"
