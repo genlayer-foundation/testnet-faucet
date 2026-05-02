@@ -42,6 +42,13 @@ body {
   color: var(--color-foreground);
 }
 
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+}
+
 /* Animated gradient mesh background */
 .gradient-mesh {
   background:

@@ -104,7 +104,7 @@ export function FaucetForm() {
       <div className="space-y-4 text-center">
         <button
           onClick={() => signIn("github")}
-          className="btn-glow flex h-[44px] w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-b from-brand-purple to-[#8a3ae0] px-4 text-[14px] font-semibold text-white"
+          className="btn-glow flex h-[44px] w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl bg-gradient-to-b from-brand-purple to-[#8a3ae0] px-4 text-[14px] font-semibold text-white"
         >
           <GitHubIcon className="h-4.5 w-4.5" />
           Sign in with GitHub
