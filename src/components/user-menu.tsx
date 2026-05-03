@@ -41,7 +41,7 @@ export function UserMenu() {
     return (
       <button
         onClick={() => signIn("github")}
-        className="flex items-center gap-1.5 rounded-full bg-surface-secondary/80 px-3 py-1.5 ring-1 ring-black/[0.04] text-[12px] font-medium text-text-secondary transition-colors hover:bg-surface-secondary hover:text-text-primary"
+        className="flex items-center gap-1.5 rounded-full bg-surface-secondary/80 px-3 py-1.5 ring-1 ring-black/[0.04] text-[12px] font-medium text-text-secondary transition-colors hover:bg-surface-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/40"
       >
         <GitHubIcon className="h-3.5 w-3.5" />
         Sign in
@@ -53,7 +53,7 @@ export function UserMenu() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 rounded-full bg-surface-secondary/80 px-2 py-1 ring-1 ring-black/[0.04] transition-colors hover:bg-surface-secondary"
+        className="flex items-center gap-2 rounded-full bg-surface-secondary/80 px-2 py-1 ring-1 ring-black/[0.04] transition-colors hover:bg-surface-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/40"
       >
         {session.user.githubAvatar ? (
           <img
@@ -72,8 +72,11 @@ export function UserMenu() {
       {open && (
         <div className="absolute right-0 top-full mt-1.5 w-40 rounded-xl border border-black/[0.06] bg-white p-1 shadow-lg">
           <button
-            onClick={() => signOut()}
-            className="w-full rounded-lg px-3 py-2 text-left text-[13px] text-text-secondary transition-colors hover:bg-surface-secondary hover:text-text-primary"
+            onClick={() => {
+              setOpen(false)
+              signOut({ redirectTo: "/" })
+            }}
+            className="w-full rounded-lg px-3 py-2 text-left text-[13px] text-text-secondary transition-colors hover:bg-surface-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/40"
           >
             Sign out
           </button>
