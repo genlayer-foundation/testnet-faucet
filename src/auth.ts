@@ -3,7 +3,6 @@ import GitHub from "next-auth/providers/github"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
-  useSecureCookies: true,
   providers: [
     GitHub({
       clientId: process.env.AUTH_GITHUB_ID,
@@ -15,14 +14,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error: "/auth/error",
   },
   logger: {
-    error: (error: any) => {
+    error: (error: Error) => {
       const cause = error.cause
+      const authError = error as Error & { type?: string }
+      const causeRecord =
+        cause && typeof cause === "object"
+          ? (cause as Record<string, unknown>)
+          : undefined
+      const causeErr =
+        causeRecord?.err && typeof causeRecord.err === "object"
+          ? (causeRecord.err as Record<string, unknown>)
+          : undefined
+
       console.error("[auth] Error:", {
-        type: error.type,
+        type: authError.type,
         message: error.message,
-        causeErr: cause?.err?.message,
-        causeErrType: cause?.err?.type,
-        causeMessage: cause?.message,
+        causeErr: causeErr?.message,
+        causeErrType: causeErr?.type,
+        causeMessage: causeRecord?.message,
         cause: JSON.stringify(cause, Object.getOwnPropertyNames(cause ?? {})),
       })
     },
