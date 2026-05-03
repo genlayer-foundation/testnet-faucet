@@ -19,7 +19,20 @@ function GitHubIcon({ className }: { className?: string }) {
 export function UserMenu() {
   const { data: session, status } = useSession()
   const [open, setOpen] = useState(false)
+  const [isSigningOut, setIsSigningOut] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  async function handleSignOut() {
+    if (isSigningOut) return
+
+    setIsSigningOut(true)
+    try {
+      await signOut({ redirectTo: "/" })
+    } catch (error) {
+      console.error("[auth] Sign out failed:", error)
+      setIsSigningOut(false)
+    }
+  }
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -72,13 +85,11 @@ export function UserMenu() {
       {open && (
         <div className="absolute right-0 top-full mt-1.5 w-40 rounded-xl border border-black/[0.06] bg-white p-1 shadow-lg">
           <button
-            onClick={() => {
-              setOpen(false)
-              signOut({ redirectTo: "/" })
-            }}
-            className="w-full rounded-lg px-3 py-2 text-left text-[13px] text-text-secondary transition-colors hover:bg-surface-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/40"
+            onClick={handleSignOut}
+            disabled={isSigningOut}
+            className="w-full rounded-lg px-3 py-2 text-left text-[13px] text-text-secondary transition-colors hover:bg-surface-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/40 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Sign out
+            {isSigningOut ? "Signing out..." : "Sign out"}
           </button>
         </div>
       )}
