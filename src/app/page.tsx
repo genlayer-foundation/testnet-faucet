@@ -73,7 +73,7 @@ export default function Home() {
                   strokeLinecap="round"
                 />
               </svg>
-              Once per 24h
+              Once per week
             </span>
             <span className="flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1.5 text-[12px] font-medium tracking-wide text-text-secondary ring-1 ring-black/[0.04]">
               <svg width="13" height="13" viewBox="0 0 14 14" fill="none" className="text-brand-purple/60">

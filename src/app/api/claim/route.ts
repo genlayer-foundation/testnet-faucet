@@ -4,7 +4,7 @@ import { claimSchema } from "@/lib/validation";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { checkAddressRateLimit, checkIpRateLimit, checkGitHubUserRateLimit, recordRateLimit } from "@/lib/rate-limit";
 import { sendGEN, isRecipientEligible, getFaucetBalance, checkMainnetEthBalance } from "@/lib/faucet";
-import { recordClaim } from "@/lib/stats";
+import { recordClaim, recordRejection, getDailyCap } from "@/lib/stats";
 import { getRedis } from "@/lib/redis";
 import type { ClaimResponse } from "@/types";
 
@@ -16,6 +16,7 @@ export async function POST(
     const body = await request.json();
     const parsed = claimSchema.safeParse(body);
     if (!parsed.success) {
+      await recordRejection("invalid_input");
       return NextResponse.json(
         { success: false, error: parsed.error.issues[0].message },
         { status: 400 }
@@ -27,6 +28,7 @@ export async function POST(
     // 2. Require GitHub authentication
     const session = await auth();
     if (!session?.user?.githubId) {
+      await recordRejection("gh_auth");
       return NextResponse.json(
         { success: false, error: "You must sign in with GitHub to claim GEN." },
         { status: 401 }
@@ -52,6 +54,7 @@ export async function POST(
 
     const turnstileResult = await verifyTurnstile(turnstileToken, clientIp);
     if (!turnstileResult.success) {
+      await recordRejection("captcha");
       return NextResponse.json(
         { success: false, error: "CAPTCHA verification failed. Please try again." },
         { status: 400 }
@@ -61,6 +64,7 @@ export async function POST(
     // 5. Check IP rate limit (read-only, does not consume)
     const ipCheck = await checkIpRateLimit(clientIp);
     if (!ipCheck.allowed) {
+      await recordRejection("rate_limit_ip");
       return NextResponse.json(
         {
           success: false,
@@ -74,23 +78,25 @@ export async function POST(
     // 6. Check address rate limit (read-only, does not consume)
     const addrCheck = await checkAddressRateLimit(normalizedAddress);
     if (!addrCheck.allowed) {
+      await recordRejection("rate_limit_addr");
       return NextResponse.json(
         {
           success: false,
-          error: "This address has already claimed GEN in the last 24 hours.",
+          error: "This address has already claimed GEN in the last 7 days.",
           retryAfter: addrCheck.retryAfter,
         },
         { status: 429 }
       );
     }
 
-    // 7. Check GitHub user rate limit (1 claim per 24h per GitHub account)
+    // 7. Check GitHub user rate limit (1 claim per 7 days per GitHub account)
     const ghCheck = await checkGitHubUserRateLimit(githubUserId);
     if (!ghCheck.allowed) {
+      await recordRejection("rate_limit_gh");
       return NextResponse.json(
         {
           success: false,
-          error: "Your GitHub account has already claimed GEN in the last 24 hours.",
+          error: "Your GitHub account has already claimed GEN in the last 7 days.",
           retryAfter: ghCheck.retryAfter,
         },
         { status: 429 }
@@ -101,6 +107,7 @@ export async function POST(
     try {
       const mainnetCheck = await checkMainnetEthBalance(normalizedAddress);
       if (!mainnetCheck.eligible) {
+        await recordRejection("eth_balance");
         const minBalance = Number(process.env.MIN_ETH_BALANCE ?? 0.01);
         return NextResponse.json(
           {
@@ -112,6 +119,7 @@ export async function POST(
       }
     } catch (error) {
       console.error("Mainnet balance check failed:", error);
+      await recordRejection("rpc_error");
       return NextResponse.json(
         { success: false, error: "Unable to verify mainnet ETH balance. Please try again later." },
         { status: 502 }
@@ -121,6 +129,7 @@ export async function POST(
     // 9. Check GEN balance threshold
     const eligible = await isRecipientEligible(normalizedAddress);
     if (!eligible) {
+      await recordRejection("recipient_balance");
       const threshold = Number(process.env.BALANCE_THRESHOLD) || 1000;
       return NextResponse.json(
         { success: false, error: `This address already has more than ${threshold} GEN.` },
@@ -128,11 +137,26 @@ export async function POST(
       );
     }
 
-    // 10. Acquire processing lock
+    // 10. Global daily cap — bounds worst-case loss regardless of sybil sophistication
+    const cap = await getDailyCap();
+    if (cap.used >= cap.limit) {
+      await recordRejection("daily_cap");
+      return NextResponse.json(
+        {
+          success: false,
+          error: "The faucet has reached its daily limit. Please try again tomorrow.",
+          retryAfter: cap.resetInSeconds,
+        },
+        { status: 503 }
+      );
+    }
+
+    // 11. Acquire processing lock
     const redis = getRedis();
     const lockKey = `lock:${normalizedAddress}`;
     const lockAcquired = await redis.set(lockKey, "1", { nx: true, ex: 60 });
     if (!lockAcquired) {
+      await recordRejection("lock_conflict");
       return NextResponse.json(
         { success: false, error: "A transaction is already being processed for this address." },
         { status: 409 }
@@ -140,20 +164,31 @@ export async function POST(
     }
 
     try {
-      // 11. Check faucet balance
+      // 12. Check faucet balance
       const faucetBalance = await getFaucetBalance();
       const claimAmount = Number(process.env.CLAIM_AMOUNT) || 100;
       if (parseFloat(faucetBalance) < claimAmount) {
+        await recordRejection("faucet_empty");
         return NextResponse.json(
           { success: false, error: "Faucet is currently empty. Please try again later." },
           { status: 503 }
         );
       }
 
-      // 12. Send transaction
-      const txHash = await sendGEN(normalizedAddress);
+      // 13. Send transaction
+      let txHash: `0x${string}`;
+      try {
+        txHash = await sendGEN(normalizedAddress);
+      } catch (sendErr) {
+        console.error("sendGEN failed:", sendErr);
+        await recordRejection("send_error");
+        return NextResponse.json(
+          { success: false, error: "Failed to send transaction. Please try again." },
+          { status: 502 }
+        );
+      }
 
-      // 13. Only record rate limit and stats AFTER successful send
+      // 14. Only record rate limit and stats AFTER successful send
       await Promise.all([
         recordRateLimit(normalizedAddress, clientIp, githubUserId),
         recordClaim(normalizedAddress),
@@ -166,6 +201,7 @@ export async function POST(
     }
   } catch (error) {
     console.error("Claim error:", error);
+    await recordRejection("unexpected_error");
     return NextResponse.json(
       { success: false, error: "An unexpected error occurred. Please try again." },
       { status: 500 }

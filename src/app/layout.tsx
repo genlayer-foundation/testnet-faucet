@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "GenLayer Testnet Faucet | Get GEN Tokens",
   description:
-    "Claim free GEN tokens for the GenLayer Testnets. 100 GEN per claim, once every 24 hours.",
+    "Claim free GEN tokens for the GenLayer Testnets. 100 GEN per claim, once every 7 days.",
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL || "https://testnet-faucet.genlayer.foundation"
   ),

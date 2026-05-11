@@ -7,7 +7,7 @@ The official faucet for [GenLayer Testnet Asimov](https://www.genlayer.com). Cla
 ## Features
 
 - **100 GEN per claim** — enough to get started building
-- **Rate limiting** — 1 claim per wallet per 24h, 5 claims per IP per 24h
+- **Rate limiting** — 1 claim per wallet per 7 days, 1 claim per GitHub account per 7 days, 5 claims per IP per 24h
 - **Balance threshold** — wallets with >1,000 GEN are ineligible
 - **CAPTCHA protection** — Cloudflare Turnstile to prevent abuse
 - **Concurrent safety** — Redis-based locking prevents double-sends
@@ -127,7 +127,7 @@ Request a token claim.
 ```json
 {
   "success": false,
-  "error": "This address has already claimed GEN in the last 24 hours.",
+  "error": "This address has already claimed GEN in the last 7 days.",
   "retryAfter": 43200
 }
 ```
@@ -150,7 +150,7 @@ The claim flow performs the following checks in order:
 1. Input validation (valid Ethereum address format)
 2. Cloudflare Turnstile CAPTCHA verification
 3. IP rate limit check (5 per 24h)
-4. Address rate limit check (1 per 24h)
+4. Address rate limit check (1 per 7 days)
 5. Recipient balance threshold check (<1,000 GEN)
 6. Redis lock acquisition (prevents concurrent claims)
 7. Faucet balance check (sufficient funds)
