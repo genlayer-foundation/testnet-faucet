@@ -6,6 +6,7 @@ import { checkAddressRateLimit, checkIpRateLimit, checkGitHubUserRateLimit, reco
 import { sendGEN, isRecipientEligible, getFaucetBalance, checkMainnetEthBalance } from "@/lib/faucet";
 import { recordClaim, recordRejection, getDailyCap } from "@/lib/stats";
 import { getRedis } from "@/lib/redis";
+import { getGenlayerChain } from "@/lib/chain";
 import type { ClaimResponse } from "@/types";
 
 export async function POST(
@@ -35,13 +36,14 @@ export async function POST(
       );
     }
     const githubUserId = session.user.githubId;
+    const explorerBaseUrl = getGenlayerChain().blockExplorers.default.url;
 
     // 3. Honeypot check — bots fill hidden fields, real users don't
     if (website) {
       return NextResponse.json({
         success: true,
         txHash: `0x${"0".repeat(64)}`,
-        explorerUrl: `${process.env.NEXT_PUBLIC_EXPLORER_URL || "https://zksync-os-testnet-genlayer.explorer.zksync.dev"}/tx/0x${"0".repeat(64)}`,
+        explorerUrl: `${explorerBaseUrl}/tx/0x${"0".repeat(64)}`,
       });
     }
 
@@ -194,7 +196,7 @@ export async function POST(
         recordClaim(normalizedAddress),
       ]);
 
-      const explorerUrl = `${process.env.NEXT_PUBLIC_EXPLORER_URL || "https://zksync-os-testnet-genlayer.explorer.zksync.dev"}/tx/${txHash}`;
+      const explorerUrl = `${explorerBaseUrl}/tx/${txHash}`;
       return NextResponse.json({ success: true, txHash, explorerUrl });
     } finally {
       await redis.del(lockKey);

@@ -59,7 +59,7 @@ function GenLayerLogo() {
   );
 }
 
-export function Header() {
+export function Header({ networkName }: { networkName: string }) {
   return (
     <header className="bg-white/80 backdrop-blur-xl border-b border-black/[0.04]">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3.5">
@@ -68,15 +68,8 @@ export function Header() {
         </Link>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 rounded-full bg-surface-secondary/80 px-3 py-1.5 ring-1 ring-black/[0.04]">
-            <span className="live-dot h-1.5 w-1.5 rounded-full bg-success" />
             <span className="text-[12px] font-medium tracking-wide text-text-secondary">
-              Testnet Bradbury
-            </span>
-          </div>
-          <div className="flex items-center gap-2 rounded-full bg-surface-secondary/80 px-3 py-1.5 ring-1 ring-black/[0.04]">
-            <span className="live-dot h-1.5 w-1.5 rounded-full bg-success" />
-            <span className="text-[12px] font-medium tracking-wide text-text-secondary">
-              Testnet Asimov
+              {networkName}
             </span>
           </div>
           <UserMenu />

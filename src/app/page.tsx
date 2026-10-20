@@ -3,14 +3,16 @@ import { FaucetForm } from "@/components/faucet-form";
 import { FaucetStatsDisplay } from "@/components/faucet-stats";
 import { AddNetworkButton } from "@/components/add-network-button";
 import { Footer } from "@/components/footer";
+import { getGenlayerChain } from "@/lib/chain";
 
 export default function Home() {
+  const chain = getGenlayerChain();
   const claimAmount = Number(process.env.NEXT_PUBLIC_CLAIM_AMOUNT) || 100;
   const minEthBalance = Number(process.env.NEXT_PUBLIC_MIN_ETH_BALANCE) || 0.01;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <Header />
+      <Header networkName={chain.name} />
 
       <main className="relative flex flex-1 flex-col items-center justify-center px-4 py-16 sm:py-24">
         {/* Background layers */}
@@ -43,10 +45,10 @@ export default function Home() {
               </svg>
             </div>
             <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.02em] text-text-primary sm:text-[32px]">
-              Testnets Faucet
+              Testnet Faucet
             </h1>
             <p className="mx-auto mt-2.5 max-w-[280px] text-[15px] leading-relaxed text-text-secondary">
-              Get {claimAmount} GEN tokens for testing on GenLayer Testnets
+              Get {claimAmount} GEN tokens for testing on {chain.name}
             </p>
           </div>
 
@@ -100,14 +102,20 @@ export default function Home() {
           </div>
 
           {/* Add network */}
-          <AddNetworkButton />
+          <AddNetworkButton network={{
+            chainId: `0x${chain.id.toString(16)}`,
+            chainName: chain.name,
+            nativeCurrency: chain.nativeCurrency,
+            rpcUrls: [...chain.rpcUrls.default.http],
+            blockExplorerUrls: [chain.blockExplorers.default.url],
+          }} />
 
           {/* Stats */}
           <FaucetStatsDisplay />
         </div>
       </main>
 
-      <Footer />
+      <Footer explorerUrl={chain.blockExplorers.default.url} />
     </div>
   );
 }

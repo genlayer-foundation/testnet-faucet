@@ -1,12 +1,10 @@
-export function Footer() {
+export function Footer({ explorerUrl }: { explorerUrl: string }) {
   const links = [
     { label: "Website", href: "https://www.genlayer.com" },
     { label: "Docs", href: "https://docs.genlayer.com" },
     {
       label: "Explorer",
-      href:
-        process.env.NEXT_PUBLIC_EXPLORER_URL ||
-        "https://zksync-os-testnet-genlayer.explorer.zksync.dev",
+      href: explorerUrl,
     },
     { label: "GitHub", href: "https://github.com/genlayerlabs" },
   ];

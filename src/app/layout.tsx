@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AuthSessionProvider } from "@/components/session-provider";
+import { getGenlayerChain } from "@/lib/chain";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,20 +14,24 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "GenLayer Testnet Faucet | Get GEN Tokens",
-  description:
-    "Claim free GEN tokens for the GenLayer Testnets. 100 GEN per claim, once every 7 days.",
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL || "https://testnet-faucet.genlayer.foundation"
-  ),
-  openGraph: {
-    title: "GenLayer Testnet Faucet",
+export function generateMetadata(): Metadata {
+  const networkName = getGenlayerChain().name;
+  const claimAmount = Number(process.env.NEXT_PUBLIC_CLAIM_AMOUNT) || 100;
+  return {
+    title: "GenLayer Testnet Faucet | Get GEN Tokens",
     description:
-      "Claim free GEN tokens for testing on GenLayer Testnets.",
-    type: "website",
-  },
-};
+      `Claim free GEN tokens for ${networkName}. ${claimAmount} GEN per claim, once every 7 days.`,
+    metadataBase: new URL(
+      process.env.NEXT_PUBLIC_APP_URL || "https://testnet-faucet.genlayer.foundation"
+    ),
+    openGraph: {
+      title: "GenLayer Testnet Faucet",
+      description:
+        `Claim free GEN tokens for testing on ${networkName}.`,
+      type: "website",
+    },
+  };
+}
 
 export default function RootLayout({
   children,

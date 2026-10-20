@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:network": "node --experimental-strip-types --test tests/network.test.mjs"
   },
   "dependencies": {
     "@marsidev/react-turnstile": "^1.4.2",

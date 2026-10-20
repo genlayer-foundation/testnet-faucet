@@ -30,12 +30,12 @@ function getClients() {
     walletClient = createWalletClient({
       account: getAccount(),
       chain,
-      transport: http(process.env.RPC_URL),
+      transport: http(process.env.RPC_URL || chain.rpcUrls.default.http[0]),
     });
 
     publicClient = createPublicClient({
       chain,
-      transport: http(process.env.RPC_URL),
+      transport: http(process.env.RPC_URL || chain.rpcUrls.default.http[0]),
     });
   }
   return { walletClient: walletClient!, publicClient: publicClient! };

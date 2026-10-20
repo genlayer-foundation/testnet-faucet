@@ -1,6 +1,6 @@
 # GenLayer Testnet Faucet
 
-The official faucet for [GenLayer Testnet Asimov](https://www.genlayer.com). Claim free GEN tokens to build and test on the network.
+The official faucet for [GenLayer Bradbury Phase 2](https://www.genlayer.com). Claim free GEN tokens to build and test on the network.
 
 **Live at [testnet-faucet.genlayer.foundation](https://testnet-faucet.genlayer.foundation)**
 
@@ -12,7 +12,7 @@ The official faucet for [GenLayer Testnet Asimov](https://www.genlayer.com). Cla
 - **CAPTCHA protection** — Cloudflare Turnstile to prevent abuse
 - **Concurrent safety** — Redis-based locking prevents double-sends
 - **Fair counting** — rate limits only consumed after successful transaction
-- **Add network** — one-click MetaMask/wallet integration for Testnet Asimov
+- **Add network** — one-click MetaMask/wallet integration for Bradbury Phase 2
 
 ## Tech Stack
 
@@ -27,20 +27,20 @@ The official faucet for [GenLayer Testnet Asimov](https://www.genlayer.com). Cla
 
 | Parameter | Value |
 | --- | --- |
-| Network | GenLayer Testnet Asimov |
+| Network | GenLayer Bradbury Phase 2 |
 | Chain ID | 4221 |
 | Currency | GEN (18 decimals) |
-| RPC | `https://zksync-os-testnet-genlayer.zksync.dev` |
-| Explorer | [explorer-asimov.genlayer.com](https://explorer-asimov.genlayer.com) |
+| RPC | `https://rpc-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz` |
+| Explorer | [explorer-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz](https://explorer-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz) |
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 22.13+ (including the network configuration checks)
 - An [Upstash Redis](https://upstash.com) instance
 - A [Cloudflare Turnstile](https://dash.cloudflare.com/?to=/:account/turnstile) site key and secret
-- A funded wallet on GenLayer Testnet Asimov
+- A funded wallet on GenLayer Bradbury Phase 2
 
 ### Setup
 
@@ -78,13 +78,15 @@ The app will be running at `http://localhost:3000`.
 | Variable | Description | Required |
 | --- | --- | --- |
 | `FAUCET_PRIVATE_KEY` | Private key of the funded faucet wallet | Yes |
-| `RPC_URL` | GenLayer Testnet RPC endpoint | Yes |
+| `RPC_URL` | Server-only RPC override; defaults to `NEXT_PUBLIC_RPC_URL`. Must target the same rollup. | No |
+| `NEXT_PUBLIC_RPC_URL` | Public HTTP(S) RPC used for wallet setup; no credentials | Yes |
+| `NEXT_PUBLIC_CHAIN_NAME` | Network name used in the wallet, header, page and metadata | Yes |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key | Yes |
 | `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile secret key | Yes |
 | `KV_REST_API_URL` | Upstash Redis REST URL | Yes |
 | `KV_REST_API_TOKEN` | Upstash Redis REST token | Yes |
-| `NEXT_PUBLIC_EXPLORER_URL` | Block explorer URL | No |
-| `NEXT_PUBLIC_CHAIN_ID` | Chain ID (default: `4221`) | No |
+| `NEXT_PUBLIC_EXPLORER_URL` | HTTP(S) explorer base URL; trailing slashes are removed | Yes |
+| `NEXT_PUBLIC_CHAIN_ID` | Positive integer chain ID (`4221` for Bradbury Phase 2); no fallback | Yes |
 | `CLAIM_AMOUNT` | GEN per claim (default: `100`) | No |
 | `NEXT_PUBLIC_CLAIM_AMOUNT` | Displayed claim amount (default: `100`) | No |
 | `BALANCE_THRESHOLD` | Max recipient balance (default: `1000`) | No |
@@ -99,7 +101,61 @@ TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
 
 ### Deploy to Vercel
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fgenlayer-foundation%2Ftestnet-faucet&env=FAUCET_PRIVATE_KEY,RPC_URL,NEXT_PUBLIC_TURNSTILE_SITE_KEY,TURNSTILE_SECRET_KEY,KV_REST_API_URL,KV_REST_API_TOKEN)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fgenlayer-foundation%2Ftestnet-faucet&env=FAUCET_PRIVATE_KEY,NEXT_PUBLIC_RPC_URL,NEXT_PUBLIC_CHAIN_ID,NEXT_PUBLIC_CHAIN_NAME,NEXT_PUBLIC_EXPLORER_URL,NEXT_PUBLIC_TURNSTILE_SITE_KEY,TURNSTILE_SECRET_KEY,KV_REST_API_URL,KV_REST_API_TOKEN)
+
+
+### Network migration
+
+Network configuration is validated in `src/lib/chain.ts`. The wallet button,
+explorer links, network labels, and metadata all use that configuration. Missing
+or invalid public network settings fail validation instead of silently selecting
+another chain. Native GEN with 18 decimals remains a transfer assumption.
+
+Set these values in the intended Vercel environment **before rebuilding**:
+
+```dotenv
+NEXT_PUBLIC_CHAIN_NAME="GenLayer Bradbury Phase 2"
+NEXT_PUBLIC_CHAIN_ID=4221
+NEXT_PUBLIC_RPC_URL=https://rpc-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz
+NEXT_PUBLIC_EXPLORER_URL=https://explorer-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz
+RPC_URL=https://rpc-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz
+```
+
+`RPC_URL` is optional, but an existing Vercel override must be updated or removed;
+it takes precedence on the server. Public settings are embedded at build time.
+Repository changes alone do not update Vercel settings or deploy the migration.
+
+- Keep the existing Redis credentials and keys: cooldowns, statistics and daily-cap
+  usage carry over. Do not reset or namespace claim history for this migration.
+- Keep `FAUCET_PRIVATE_KEY` if it derives the expected faucet address
+  `0x08E9F4723CF5A27866bB11eD2C41162e05206777`. Verify the derived public address
+  without displaying the key. The wallet needs native GEN on Orbit plus gas.
+- Existing wallet entries using chain ID `4221` may still point at the old zkSync
+  chain. Edit their RPC and explorer to the new values; accepting “Add network”
+  does not prove the wallet replaced an existing endpoint. Select the updated
+  network to see the new balance.
+- This configuration funds one rollup. It does not independently route claims to
+  Asimov. GitHub, CAPTCHA, Ethereum mainnet ETH checks, and claim amounts are unchanged.
+- No consensus ABI/address, bridge integration, or WebSocket client is required.
+
+See the [migration skill](.agents/skills/migrate-faucet-network/SKILL.md) for the
+full change map and the [deployment reference](.agents/skills/migrate-faucet-network/references/bradbury-phase-2.md)
+for chain identity, funding links and epoch reads.
+
+### Checks
+
+With the public network settings from `.env.example` configured in `.env.local`:
+
+```bash
+npm run test:network
+npm run lint
+npm run build
+```
+
+The network tests run offline with isolated example configuration. After an
+approved rollout, verify a real claim's receipt, recipient balance increase,
+explorer link and retained cooldowns. A returned transaction hash alone does not
+confirm mining. Do not use production Redis for local claim tests.
 
 ## API
 
@@ -119,7 +175,7 @@ Request a token claim.
 {
   "success": true,
   "txHash": "0x...",
-  "explorerUrl": "https://explorer-asimov.genlayer.com/tx/0x..."
+  "explorerUrl": "https://explorer-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz/tx/0x..."
 }
 ```
 
