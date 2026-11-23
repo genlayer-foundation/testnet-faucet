@@ -10,7 +10,8 @@ The official faucet for [GenLayer Bradbury Phase 2](https://www.genlayer.com). C
 - **Rate limiting** — 1 claim per wallet per 7 days, 1 claim per GitHub account per 7 days, 5 claims per IP per 24h
 - **Balance threshold** — wallets with >1,000 GEN are ineligible
 - **CAPTCHA protection** — Cloudflare Turnstile to prevent abuse
-- **Concurrent safety** — Redis-based locking prevents double-sends
+- **Concurrent safety** — Redis locks per wallet and per GitHub account; limits are re-read inside the locks
+- **Validator grant** — a wallet holding at least 1 ETH on Ethereum mainnet can claim 50,000 GEN once, ever (enough for the 42,000 GEN minimum validator stake); once per wallet and per GitHub account; capped per UTC day; off unless `VALIDATOR_GRANT_ENABLED=true`
 - **Fair counting** — rate limits only consumed after successful transaction
 - **Add network** — one-click MetaMask/wallet integration for Bradbury Phase 2
 
@@ -91,6 +92,13 @@ The app will be running at `http://localhost:3000`.
 | `NEXT_PUBLIC_CLAIM_AMOUNT` | Displayed claim amount (default: `100`) | No |
 | `BALANCE_THRESHOLD` | Max recipient balance (default: `1000`) | No |
 | `NEXT_PUBLIC_APP_URL` | Canonical URL for metadata | No |
+| `ETHEREUM_RPC_URL` | Ethereum mainnet RPC for the ETH balance checks. The 100 GEN claim falls back to a public endpoint when unset; the validator grant refuses | No |
+| `VALIDATOR_GRANT_ENABLED` | `true` switches the validator grant on (also needs `ETHEREUM_RPC_URL`). Read at build time for the page: rebuild after changing | No |
+| `VALIDATOR_GRANT_AMOUNT` | GEN sent by the validator grant (default: `50000`) | No |
+| `VALIDATOR_GRANT_MIN_ETH` | Mainnet ETH a wallet must hold (default: `1`) | No |
+| `VALIDATOR_GRANT_DAILY_CAP` | Max validator grants per UTC day across all wallets (default: `20`; `0` switches the grant off) | No |
+| `VALIDATOR_GRANT_MIN_TX_COUNT` | Minimum transactions the wallet has sent on mainnet (default: `0`, no requirement) | No |
+| `VALIDATOR_GRANT_BALANCE_BLOCK` | `latest` (default) or `finalized`: the mainnet block the balance and transaction count are read at | No |
 
 For local development, Turnstile provides test keys that always pass:
 
@@ -148,6 +156,7 @@ With the public network settings from `.env.example` configured in `.env.local`:
 
 ```bash
 npm run test:network
+npm run test:send
 npm run lint
 npm run build
 ```
@@ -188,6 +197,44 @@ Request a token claim.
 }
 ```
 
+### `POST /api/validator-grant`
+
+One-time grant for validators. Same request body as `/api/claim`, same GitHub session. The address must hold at least `VALIDATOR_GRANT_MIN_ETH` native ETH on Ethereum mainnet; the GEN is sent to that same address.
+
+**Success (200):** the transfer is mined.
+```json
+{
+  "success": true,
+  "txHash": "0x...",
+  "explorerUrl": "https://.../tx/0x...",
+  "amount": "50000"
+}
+```
+
+**Not confirmed yet (202):** the transfer was signed and recorded but no receipt was seen. It is not a failure. Sending the same request again reports the outcome of that same transaction and never creates a second one.
+```json
+{
+  "success": false,
+  "pending": true,
+  "txHash": "0x...",
+  "explorerUrl": "https://.../tx/0x...",
+  "amount": "50000",
+  "error": "Your grant was submitted but is not confirmed yet. ..."
+}
+```
+
+**Refusals** (`{ "success": false, "error": "..." }`):
+
+| Status | Meaning |
+| --- | --- |
+| 400 | Invalid address or failed CAPTCHA |
+| 401 | Not signed in with GitHub |
+| 403 | Less than the minimum ETH (or transactions) on mainnet |
+| 409 | Wallet already received the grant, GitHub account already used for another wallet, or a request is in progress |
+| 429 | IP limit reached, or today's global cap of grants is used up |
+| 502 | Nothing was sent: the transfer could not be prepared, or an earlier one is proven dead |
+| 503 | Grant switched off, mainnet could not be read, or faucet balance too low |
+
 ### `GET /api/stats`
 
 Public statistics endpoint (cached for 30s).
@@ -208,11 +255,25 @@ The claim flow performs the following checks in order:
 3. IP rate limit check (5 per 24h)
 4. Address rate limit check (1 per 7 days)
 5. Recipient balance threshold check (<1,000 GEN)
-6. Redis lock acquisition (prevents concurrent claims)
+6. Redis lock acquisition for the wallet and the GitHub account, then the wallet and GitHub limits are read again inside the locks
 7. Faucet balance check (sufficient funds)
 8. Transaction send
 9. Rate limit and stats recorded (only on success)
 10. Lock release
+
+### Validator grant
+
+`POST /api/validator-grant` runs: input validation, "is the grant on", GitHub session, Turnstile, the shared IP limit (a grant counts as one of the 5 per 24h), the once-ever wallet key, the once-ever GitHub key, the global daily cap, the mainnet read, Redis locks for the wallet and the GitHub account, a re-check of the once-ever keys, an atomic daily slot reservation, the faucet balance check, then the send. The 1,000 GEN balance threshold and the 100 GEN daily cap do not apply to this path.
+
+**No double payment.** The transfer is signed locally first, so its hash and nonce are known before anything is broadcast. That record (`faucet:vgrant:pending:<wallet>`) is written to Redis before the broadcast and removed only when the outcome is proven (`src/lib/tracked-send.ts`):
+
+- receipt with success: the permanent wallet key is written, then the record is removed;
+- receipt reverted, or the faucet nonce was used by a different transaction and five minutes have passed: nothing was paid, the record, the daily slot and the GitHub key are released and the wallet may try again;
+- anything else (timeout, dropped connection, not mined yet): the wallet stays "pending". A new request only looks the hash up, and re-broadcasts the same signed bytes if the nonce is still free. It never signs a second transfer.
+
+It fails closed: if `ETHEREUM_RPC_URL` is unset, errors, times out (8s) or is not chain id 1, nothing is sent. The 100 GEN claim does not depend on the grant being on.
+
+Known limits: the grant checks a balance, not a person. The same ETH can be moved to a fresh wallet and claimed again with another GitHub account, so `VALIDATOR_GRANT_DAILY_CAP` is what bounds the total given out per day. The 100 GEN claim still uses a plain send: if its RPC call times out after the broadcast, the claim is reported as failed and can be repeated.
 
 ## License
 

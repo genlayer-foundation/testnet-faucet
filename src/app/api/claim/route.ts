@@ -153,19 +153,57 @@ export async function POST(
       );
     }
 
-    // 11. Acquire processing lock
+    // 11. Acquire processing locks: one in-flight claim per wallet and per
+    //     GitHub account
     const redis = getRedis();
     const lockKey = `lock:${normalizedAddress}`;
-    const lockAcquired = await redis.set(lockKey, "1", { nx: true, ex: 60 });
-    if (!lockAcquired) {
+    const githubLockKey = `lock:gh:${githubUserId}`;
+    const lockConflict = async () => {
       await recordRejection("lock_conflict");
       return NextResponse.json(
         { success: false, error: "A transaction is already being processed for this address." },
         { status: 409 }
       );
+    };
+    if (!(await redis.set(lockKey, "1", { nx: true, ex: 60 }))) {
+      return lockConflict();
+    }
+    if (!(await redis.set(githubLockKey, "1", { nx: true, ex: 60 }))) {
+      await redis.del(lockKey);
+      return lockConflict();
     }
 
     try {
+      // The limits were read before the locks. A claim for the same wallet or
+      // GitHub account may have completed in between, so read them again now
+      // that nothing else can be sending for either.
+      const [addrRecheck, ghRecheck] = await Promise.all([
+        checkAddressRateLimit(normalizedAddress),
+        checkGitHubUserRateLimit(githubUserId),
+      ]);
+      if (!addrRecheck.allowed) {
+        await recordRejection("rate_limit_addr");
+        return NextResponse.json(
+          {
+            success: false,
+            error: "This address has already claimed GEN in the last 7 days.",
+            retryAfter: addrRecheck.retryAfter,
+          },
+          { status: 429 }
+        );
+      }
+      if (!ghRecheck.allowed) {
+        await recordRejection("rate_limit_gh");
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Your GitHub account has already claimed GEN in the last 7 days.",
+            retryAfter: ghRecheck.retryAfter,
+          },
+          { status: 429 }
+        );
+      }
+
       // 12. Check faucet balance
       const faucetBalance = await getFaucetBalance();
       const claimAmount = Number(process.env.CLAIM_AMOUNT) || 100;
@@ -199,6 +237,7 @@ export async function POST(
       const explorerUrl = `${explorerBaseUrl}/tx/${txHash}`;
       return NextResponse.json({ success: true, txHash, explorerUrl });
     } finally {
+      await redis.del(githubLockKey);
       await redis.del(lockKey);
     }
   } catch (error) {
