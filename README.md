@@ -232,7 +232,7 @@ One-time grant for validators. Same request body as `/api/claim`, same GitHub se
 | 403 | Less than the minimum ETH (or transactions) on mainnet |
 | 409 | Wallet already received the grant, GitHub account already used for another wallet, or a request is in progress |
 | 429 | IP limit reached, or today's global cap of grants is used up |
-| 502 | Nothing was sent: the transfer could not be prepared, or an earlier one is proven dead |
+| 502 | Preparation or reservation failed, or an earlier transfer failed. Retry with the same wallet to recover any saved transfer |
 | 503 | Grant switched off, mainnet could not be read, or faucet balance too low |
 
 ### `GET /api/stats`
@@ -263,7 +263,7 @@ The claim flow performs the following checks in order:
 
 ### Validator grant
 
-`POST /api/validator-grant` runs: input validation, "is the grant on", GitHub session, Turnstile, the shared IP limit (a grant counts as one of the 5 per 24h), the once-ever wallet key, the once-ever GitHub key, the global daily cap, the mainnet read, Redis locks for the wallet and the GitHub account, a re-check of the once-ever keys, an atomic daily slot reservation, the faucet balance check, then the send. The 1,000 GEN balance threshold and the 100 GEN daily cap do not apply to this path.
+`POST /api/validator-grant` runs: input validation, "is the grant on", GitHub session, Turnstile, the shared IP limit (a grant counts as one of the 5 per 24h), the once-ever wallet key, the once-ever GitHub key, the global daily cap, the mainnet read, Redis locks for the wallet and the GitHub account, the faucet balance check, then local signing. A single Redis operation checks the once-ever keys and daily cap, reserves the GitHub account and daily slot, and saves the signed transfer before broadcast. The 1,000 GEN balance threshold and the 100 GEN daily cap do not apply to this path.
 
 **No double payment.** The transfer is signed locally first, so its hash and nonce are known before anything is broadcast. That record (`faucet:vgrant:pending:<wallet>`) is written to Redis before the broadcast and removed only when the outcome is proven (`src/lib/tracked-send.ts`):
 

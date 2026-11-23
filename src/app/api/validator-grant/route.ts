@@ -13,7 +13,7 @@ import {
 } from "@/lib/tracked-send";
 import {
   acquireGrantLock,
-  claimGitHubGrant,
+  dailyKey,
   clearPendingGrant,
   getGitHubGrantAddress,
   getGrantConfig,
@@ -23,11 +23,9 @@ import {
   hasReceivedGrant,
   isGrantEnabled,
   recordGrant,
-  recordPendingGrant,
-  releaseDailySlot,
-  releaseGitHubGrant,
+  reservePendingGrant,
+  releaseFailedGrant,
   releaseGrantLock,
-  reserveDailySlot,
 } from "@/lib/validator-grant";
 import type { ClaimResponse } from "@/types";
 
@@ -184,61 +182,41 @@ export async function POST(
         );
       }
 
-      // 12. Tie the GitHub account to this wallet (atomic)
-      if (!(await claimGitHubGrant(githubUserId, normalizedAddress))) {
-        return refuse(GITHUB_USED, 409);
-      }
-
-      // 13. Take one of today's slots (atomic; handed back if nothing is sent)
-      const slotKey = await reserveDailySlot(config.dailyCap);
-      if (!slotKey) {
-        await releaseGitHubGrant(githubUserId).catch(() => {});
-        return refuse(CAP_REACHED, 429);
-      }
-
-      const handBack = async () => {
-        await releaseDailySlot(slotKey).catch(() => {});
-        await releaseGitHubGrant(githubUserId).catch(() => {});
-      };
-
-      let outcome: SendOutcome | null;
+      const slotKey = dailyKey();
+      let outcome: SendOutcome;
       try {
-        // 14. Check faucet balance covers the grant
         const faucetBalance = await getFaucetBalanceWei();
         if (faucetBalance < config.amountWei + GAS_MARGIN_WEI) {
-          await handBack();
           return refuse(
             "The faucet cannot cover a validator grant right now. Please try again later.",
             503
           );
         }
 
-        // 15. Sign, record the hash, then broadcast. If this throws, the
-        //     transaction was never broadcast.
-        outcome = await sendTracked(
+        const result = await sendTracked(
           normalizedAddress,
           config.amountWei,
           io,
-          (signed) =>
-            recordPendingGrant(normalizedAddress, {
-              ...signed,
-              githubUserId,
-              slotKey,
-            })
+          (signed) => reservePendingGrant(
+            normalizedAddress, { ...signed, githubUserId, slotKey }, config.dailyCap
+          )
         );
+        switch (result) {
+          case "granted":
+            return refuse(ALREADY_GRANTED, 409);
+          case "pending":
+            return refuse(IN_PROGRESS, 409);
+          case "github_used":
+            return refuse(GITHUB_USED, 409);
+          case "cap_reached":
+            return refuse(CAP_REACHED, 429);
+          default:
+            outcome = result;
+        }
       } catch (error) {
-        console.error("Validator grant: nothing sent:", error);
-        await handBack();
-        return refuse(
-          "The transfer could not be prepared and nothing was sent. Please try again in a few minutes.",
-          502
-        );
-      }
-
-      if (!outcome) {
-        // A record appeared for this wallet after our check; it owns the send.
-        await releaseDailySlot(slotKey).catch(() => {});
-        return refuse(IN_PROGRESS, 409);
+        // The reservation may have committed before its reply was lost.
+        console.error("Validator grant: preparation or reservation failed:", error);
+        return refuse("Could not complete your request. Please try again in a few minutes.", 502);
       }
 
       return await respond(outcome, normalizedAddress, clientIp, {
@@ -291,10 +269,7 @@ async function respond(
     console.error(
       `Validator grant: ${outcome.txHash} to ${address} failed: ${outcome.reason}`
     );
-    // Pending first: if this throws, the next request settles it again.
-    await clearPendingGrant(address);
-    await releaseDailySlot(grant.slotKey).catch(() => {});
-    await releaseGitHubGrant(grant.githubUserId).catch(() => {});
+    await releaseFailedGrant(address, outcome.txHash, grant);
     return refuse(
       "The transfer did not go through and nothing was sent. Please try again.",
       502

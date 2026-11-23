@@ -109,17 +109,17 @@ export interface SendOptions extends SettleOptions {
 /**
  * Signs, records, broadcasts, then waits briefly for the receipt.
  *
- * `record` must store the pending send durably and return false when another
- * record already exists for the same recipient (then nothing is broadcast and
- * null is returned). If `sign` or `record` throw, nothing was sent.
+ * `record` must store the pending send durably and return true to authorize broadcast.
+ * Any refusal is returned to the caller. If the write throws, its outcome
+ * can be ambiguous and its reservations must be preserved for reconciliation.
  */
-export async function sendTracked(
+export async function sendTracked<Refusal extends string>(
   to: `0x${string}`,
   valueWei: bigint,
   io: ChainIO,
-  record: (pending: PendingSend) => Promise<boolean>,
+  record: (pending: PendingSend) => Promise<true | Refusal>,
   options: SendOptions = {}
-): Promise<SendOutcome | null> {
+): Promise<SendOutcome | Refusal> {
   const now = options.now ?? Date.now;
   const waitMs = options.waitMs ?? 15_000;
   const pollMs = options.pollMs ?? 1_000;
@@ -129,7 +129,8 @@ export async function sendTracked(
   const signed = await io.sign(to, valueWei);
   const pending: PendingSend = { ...signed, createdAt: now() };
 
-  if (!(await record(pending))) return null;
+  const reservation = await record(pending);
+  if (reservation !== true) return reservation;
 
   // From here on the outcome is never reported as "nothing was sent" unless
   // the chain proves it.

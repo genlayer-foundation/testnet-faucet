@@ -149,25 +149,6 @@ export async function getGitHubGrantAddress(
   return getRedis().get<string>(`${GH_PREFIX}${githubUserId}`);
 }
 
-/**
- * Ties the GitHub account to this wallet, once. Returns false when the account
- * is already tied to a different wallet.
- */
-export async function claimGitHubGrant(
-  githubUserId: string,
-  address: string
-): Promise<boolean> {
-  const redis = getRedis();
-  const key = `${GH_PREFIX}${githubUserId}`;
-  const set = await redis.set(key, address, { nx: true });
-  if (set) return true;
-  return (await redis.get<string>(key)) === address;
-}
-
-export async function releaseGitHubGrant(githubUserId: string): Promise<void> {
-  await getRedis().del(`${GH_PREFIX}${githubUserId}`);
-}
-
 // --- pending sends -----------------------------------------------------------
 
 export interface PendingGrant extends PendingSend {
@@ -182,15 +163,55 @@ export async function getPendingGrant(
   return getRedis().get<PendingGrant>(`${PENDING_PREFIX}${address}`);
 }
 
-/** Written before the broadcast. False when a record already exists. */
-export async function recordPendingGrant(
+type ReservationResult = "reserved" | "pending" | "granted" | "github_used" | "cap_reached";
+
+// The pending bytes and both reservations must survive a lost Redis reply together.
+// A replay after a committed EVAL sees the existing record and consumes no slot.
+export async function reservePendingGrant(
   address: string,
-  pending: PendingGrant
-): Promise<boolean> {
-  const set = await getRedis().set(`${PENDING_PREFIX}${address}`, pending, {
-    nx: true,
-  });
-  return Boolean(set);
+  pending: PendingGrant,
+  cap: number
+) {
+  const result = await getRedis().eval<[string, string, number, number], ReservationResult>(
+    `if redis.call("EXISTS", KEYS[4]) == 1 then return "granted" end
+     if redis.call("EXISTS", KEYS[1]) == 1 then return "pending" end
+     local wallet = redis.call("GET", KEYS[2])
+     if wallet and wallet ~= ARGV[1] then return "github_used" end
+     local used = tonumber(redis.call("GET", KEYS[3]) or "0")
+     if used >= tonumber(ARGV[3]) then return "cap_reached" end
+
+     if redis.call("INCR", KEYS[3]) == 1 then
+       redis.call("EXPIRE", KEYS[3], ARGV[4])
+     end
+     redis.call("SET", KEYS[2], ARGV[1])
+     redis.call("SET", KEYS[1], ARGV[2])
+     return "reserved"`,
+    [
+      `${PENDING_PREFIX}${address}`,
+      `${GH_PREFIX}${pending.githubUserId}`,
+      pending.slotKey,
+      `${GRANTED_PREFIX}${address}`,
+    ],
+    [address, JSON.stringify(pending), cap, DAILY_TTL_SECONDS]
+  );
+  return result === "reserved" ? true as const : result;
+}
+
+/** Release only the failed send's reservation, even if Redis retries the command. */
+export async function releaseFailedGrant(
+  address: string,
+  txHash: string,
+  grant: Pick<PendingGrant, "githubUserId" | "slotKey">
+): Promise<void> {
+  await getRedis().eval(
+    `local raw = redis.call("GET", KEYS[1])
+     if not raw or cjson.decode(raw).txHash ~= ARGV[1] then return 0 end
+     if redis.call("EXISTS", KEYS[3]) == 1 then redis.call("DECR", KEYS[3]) end
+     if redis.call("GET", KEYS[2]) == ARGV[2] then redis.call("DEL", KEYS[2]) end
+     return redis.call("DEL", KEYS[1])`,
+    [`${PENDING_PREFIX}${address}`, `${GH_PREFIX}${grant.githubUserId}`, grant.slotKey],
+    [txHash, address]
+  );
 }
 
 export async function clearPendingGrant(address: string): Promise<void> {
@@ -213,30 +234,10 @@ export async function releaseGrantLock(id: string): Promise<void> {
 
 // --- global daily cap --------------------------------------------------------
 
-function dailyKey(): string {
+export function dailyKey(): string {
   return `${DAILY_PREFIX}${new Date().toISOString().split("T")[0]}`; // UTC day
 }
 
 export async function getGrantsToday(): Promise<number> {
   return (await getRedis().get<number>(dailyKey())) ?? 0;
-}
-
-/**
- * Atomically takes one of today's grant slots. Returns the key to hand back to
- * releaseDailySlot if the send fails, or null when the cap is reached.
- */
-export async function reserveDailySlot(cap: number): Promise<string | null> {
-  const redis = getRedis();
-  const key = dailyKey();
-  const count = await redis.incr(key);
-  if (count === 1) await redis.expire(key, DAILY_TTL_SECONDS);
-  if (count > cap) {
-    await redis.decr(key);
-    return null;
-  }
-  return key;
-}
-
-export async function releaseDailySlot(key: string): Promise<void> {
-  await getRedis().decr(key);
 }

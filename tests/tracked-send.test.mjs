@@ -66,7 +66,7 @@ function store() {
   const s = {
     pending: null,
     record: async (p) => {
-      if (s.pending) return false;
+      if (s.pending) return "pending";
       s.pending = p;
       return true;
     },
@@ -108,7 +108,7 @@ test("a second send for the same recipient is refused while one is recorded", as
   const s = store();
   await sendTracked(TO, 50n, chain.io, s.record, { sleep: noSleep });
   const again = await sendTracked(TO, 50n, chain.io, s.record, { sleep: noSleep });
-  assert.equal(again, null);
+  assert.equal(again, "pending");
   chain.mine();
   assert.equal(chain.paid, 50n);
   assert.equal(chain.broadcasts.filter((r) => r === "0xraw2").length, 0);
@@ -206,4 +206,21 @@ test("record failure sends nothing", async () => {
     })
   );
   assert.equal(chain.broadcasts.length, 0);
+});
+
+test("lost reply after recording: a retry settles the stored transfer", async () => {
+  const chain = fakeChain();
+  const s = store();
+  await assert.rejects(() =>
+    sendTracked(TO, 50n, chain.io, async (pending) => {
+      await s.record(pending);
+      throw new Error("lost write acknowledgement");
+    })
+  );
+  assert.equal(chain.broadcasts.length, 0);
+  assert.equal((await settlePending(s.pending, chain.io)).state, "unknown");
+  chain.mine();
+  assert.equal((await settlePending(s.pending, chain.io)).state, "confirmed");
+  assert.equal(chain.signed, 1);
+  assert.equal(chain.paid, 50n);
 });
