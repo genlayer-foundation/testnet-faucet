@@ -18,7 +18,7 @@ const MAINNET_TIMEOUT_MS = 8000;
 
 const DEFAULT_AMOUNT = "50000";
 const DEFAULT_MIN_ETH = "1";
-const DEFAULT_DAILY_CAP = 20;
+const DEFAULT_DAILY_CAP = 100;
 
 function positiveDecimal(raw: string | undefined, fallback: string): string {
   const value = raw?.trim();

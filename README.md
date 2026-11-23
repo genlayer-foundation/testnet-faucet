@@ -96,7 +96,7 @@ The app will be running at `http://localhost:3000`.
 | `VALIDATOR_GRANT_ENABLED` | `true` switches the validator grant on (also needs `ETHEREUM_RPC_URL`). Read at build time for the page: rebuild after changing | No |
 | `VALIDATOR_GRANT_AMOUNT` | GEN sent by the validator grant (default: `50000`) | No |
 | `VALIDATOR_GRANT_MIN_ETH` | Mainnet ETH a wallet must hold (default: `1`) | No |
-| `VALIDATOR_GRANT_DAILY_CAP` | Max validator grants per UTC day across all wallets (default: `20`; `0` switches the grant off) | No |
+| `VALIDATOR_GRANT_DAILY_CAP` | Max validator grants per UTC day across all wallets (default: `100`; `0` switches the grant off) | No |
 | `VALIDATOR_GRANT_MIN_TX_COUNT` | Minimum transactions the wallet has sent on mainnet (default: `0`, no requirement) | No |
 | `VALIDATOR_GRANT_BALANCE_BLOCK` | `latest` (default) or `finalized`: the mainnet block the balance and transaction count are read at | No |
 
