@@ -78,3 +78,16 @@ export async function recordRateLimit(
     await redis.expire(ipKey, IP_TTL_SECONDS);
   }
 }
+
+// Counts one claim against the IP only (used by the validator grant, which
+// has its own once-ever wallet and GitHub keys instead of the weekly ones).
+export async function recordIpRateLimit(ip: string): Promise<void> {
+  const redis = getRedis();
+  const ipKey = `${IP_PREFIX}${ip}`;
+  await redis.incr(ipKey);
+
+  const ttl = await redis.ttl(ipKey);
+  if (ttl < 0) {
+    await redis.expire(ipKey, IP_TTL_SECONDS);
+  }
+}

@@ -4,11 +4,16 @@ import { FaucetStatsDisplay } from "@/components/faucet-stats";
 import { AddNetworkButton } from "@/components/add-network-button";
 import { Footer } from "@/components/footer";
 import { getGenlayerChain } from "@/lib/chain";
+import { ValidatorGrant } from "@/components/validator-grant";
+import { getGrantConfig, isGrantEnabled } from "@/lib/validator-grant";
 
 export default function Home() {
   const chain = getGenlayerChain();
   const claimAmount = Number(process.env.NEXT_PUBLIC_CLAIM_AMOUNT) || 100;
   const minEthBalance = Number(process.env.NEXT_PUBLIC_MIN_ETH_BALANCE) || 0.01;
+  // Read at build time: shown only when the grant is switched on.
+  const grant = getGrantConfig();
+  const showGrant = isGrantEnabled();
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -100,6 +105,11 @@ export default function Home() {
               Requires {minEthBalance} ETH on mainnet
             </span>
           </div>
+
+          {/* One-time validator grant */}
+          {showGrant && (
+            <ValidatorGrant amount={grant.amount} minEth={grant.minEth} />
+          )}
 
           {/* Add network */}
           <AddNetworkButton network={{
