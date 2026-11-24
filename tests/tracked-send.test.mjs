@@ -139,11 +139,20 @@ test("nonce taken by another transaction: failed only after the safety window", 
   await sendTracked(TO, 50n, chain.io, s.record, { sleep: noSleep, now });
   chain.otherTransactionUsesNonce();
 
-  const early = await settlePending(s.pending, chain.io, { now });
+  // The first sighting of "nonce spent, no receipt" is stored, never trusted.
+  const onNonceSpent = async (at) => {
+    s.pending = { ...s.pending, nonceSpentSeenAt: s.pending.nonceSpentSeenAt ?? at };
+  };
+  const early = await settlePending(s.pending, chain.io, { now, onNonceSpent });
   assert.equal(early.state, "unknown", "too early to be sure");
+  assert.equal(s.pending.nonceSpentSeenAt, clock);
 
-  clock += 5 * 60 * 1000 + 1;
-  const late = await settlePending(s.pending, chain.io, { now });
+  clock += 5 * 60 * 1000 - 1;
+  const still = await settlePending(s.pending, chain.io, { now, onNonceSpent });
+  assert.equal(still.state, "unknown", "inside the window");
+
+  clock += 2;
+  const late = await settlePending(s.pending, chain.io, { now, onNonceSpent });
   assert.equal(late.state, "failed");
   assert.equal(chain.paid, 0n);
   // The dead transaction was never re-broadcast after its nonce was spent.
@@ -223,4 +232,43 @@ test("lost reply after recording: a retry settles the stored transfer", async ()
   assert.equal((await settlePending(s.pending, chain.io)).state, "confirmed");
   assert.equal(chain.signed, 1);
   assert.equal(chain.paid, 50n);
+});
+
+test("signed long ago, mined just now, receipt not served yet: never failed", async () => {
+  // The record was stored but not broadcast; the user returns an hour later.
+  const chain = fakeChain({ mode: "reject" });
+  const s = store();
+  let clock = 0;
+  const now = () => clock;
+  const onNonceSpent = async (at) => {
+    s.pending = { ...s.pending, nonceSpentSeenAt: s.pending.nonceSpentSeenAt ?? at };
+  };
+  await sendTracked(TO, 50n, chain.io, s.record, { sleep: noSleep, now });
+  clock += 60 * 60 * 1000;
+  chain.mode = "ok";
+  assert.equal((await settlePending(s.pending, chain.io, { now, onNonceSpent })).state, "unknown");
+  chain.mine();
+
+  // A lagging node: the nonce has moved on but the receipt is not served yet.
+  const realReceipt = chain.io.receipt;
+  chain.io.receipt = async () => null;
+  clock += 1000;
+  const lagging = await settlePending(s.pending, chain.io, { now, onNonceSpent });
+  assert.equal(lagging.state, "unknown", "a paid grant must not be called failed");
+
+  chain.io.receipt = realReceipt;
+  clock += 1000;
+  assert.equal((await settlePending(s.pending, chain.io, { now, onNonceSpent })).state, "confirmed");
+  assert.equal(chain.paid, 50n);
+});
+
+test("without a stored first sighting, a spent nonce never means failed", async () => {
+  const chain = fakeChain({ mode: "reject" });
+  const s = store();
+  let clock = 0;
+  const now = () => clock;
+  await sendTracked(TO, 50n, chain.io, s.record, { sleep: noSleep, now });
+  chain.otherTransactionUsesNonce();
+  clock += 24 * 60 * 60 * 1000;
+  assert.equal((await settlePending(s.pending, chain.io, { now })).state, "unknown");
 });

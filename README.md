@@ -263,12 +263,12 @@ The claim flow performs the following checks in order:
 
 ### Validator grant
 
-`POST /api/validator-grant` runs: input validation, "is the grant on", GitHub session, Turnstile, the shared IP limit (a grant counts as one of the 5 per 24h), the once-ever wallet key, the once-ever GitHub key, the global daily cap, the mainnet read, Redis locks for the wallet and the GitHub account, the faucet balance check, then local signing. A single Redis operation checks the once-ever keys and daily cap, reserves the GitHub account and daily slot, and saves the signed transfer before broadcast. The 1,000 GEN balance threshold and the 100 GEN daily cap do not apply to this path.
+`POST /api/validator-grant` runs: input validation, "is the grant on", GitHub session, Turnstile, the shared IP limit (a grant counts as one of the 5 per 24h), the once-ever wallet key, the once-ever GitHub key, the global daily cap, the mainnet read, Redis locks for the wallet and the GitHub account, a signer lock (one grant signs and broadcasts at a time, because all grants share the faucet nonce), the faucet balance check, then local signing. A single Redis operation checks the once-ever keys and daily cap, reserves the GitHub account and daily slot, and saves the signed transfer before broadcast. The 1,000 GEN balance threshold and the 100 GEN daily cap do not apply to this path.
 
 **No double payment.** The transfer is signed locally first, so its hash and nonce are known before anything is broadcast. That record (`faucet:vgrant:pending:<wallet>`) is written to Redis before the broadcast and removed only when the outcome is proven (`src/lib/tracked-send.ts`):
 
 - receipt with success: the permanent wallet key is written, then the record is removed;
-- receipt reverted, or the faucet nonce was used by a different transaction and five minutes have passed: nothing was paid, the record, the daily slot and the GitHub key are released and the wallet may try again;
+- receipt reverted, or the faucet nonce is spent with no receipt for this hash and that is still true five minutes after a check first saw it (the first sighting is stored in `faucet:vgrant:noncespent:<hash>`; the clock does not start at signing, because a stored transfer can be broadcast and mined long after): nothing was paid, the record, the daily slot and the GitHub key are released and the wallet may try again;
 - anything else (timeout, dropped connection, not mined yet): the wallet stays "pending". A new request only looks the hash up, and re-broadcasts the same signed bytes if the nonce is still free. It never signs a second transfer.
 
 It fails closed: if `ETHEREUM_RPC_URL` is unset, errors, times out (8s) or is not chain id 1, nothing is sent. The 100 GEN claim does not depend on the grant being on.

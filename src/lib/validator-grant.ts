@@ -13,6 +13,8 @@ const PENDING_PREFIX = "faucet:vgrant:pending:"; // kept until the outcome is kn
 const LOCK_PREFIX = "lock:vgrant:";
 const DAILY_PREFIX = "faucet:vgrant:daily:";
 const DAILY_TTL_SECONDS = 172800; // counters are only read on their own day
+const NONCE_SPENT_PREFIX = "faucet:vgrant:noncespent:"; // by tx hash
+const NONCE_SPENT_TTL_SECONDS = 2592000; // 30 days, far longer than any retry
 const LOCK_TTL_SECONDS = 120;
 const MAINNET_TIMEOUT_MS = 8000;
 
@@ -166,7 +168,9 @@ export async function getPendingGrant(
 type ReservationResult = "reserved" | "pending" | "granted" | "github_used" | "cap_reached";
 
 // The pending bytes and both reservations must survive a lost Redis reply together.
-// A replay after a committed EVAL sees the existing record and consumes no slot.
+// The Redis client retries a request whose reply was lost: a replay after a
+// committed EVAL finds its own record (same bytes), consumes no second slot and
+// is told "reserved" again, so the broadcast still happens in this request.
 export async function reservePendingGrant(
   address: string,
   pending: PendingGrant,
@@ -174,7 +178,11 @@ export async function reservePendingGrant(
 ) {
   const result = await getRedis().eval<[string, string, number, number], ReservationResult>(
     `if redis.call("EXISTS", KEYS[4]) == 1 then return "granted" end
-     if redis.call("EXISTS", KEYS[1]) == 1 then return "pending" end
+     local existing = redis.call("GET", KEYS[1])
+     if existing then
+       if existing == ARGV[2] then return "reserved" end
+       return "pending"
+     end
      local wallet = redis.call("GET", KEYS[2])
      if wallet and wallet ~= ARGV[1] then return "github_used" end
      local used = tonumber(redis.call("GET", KEYS[3]) or "0")
@@ -204,14 +212,34 @@ export async function releaseFailedGrant(
   grant: Pick<PendingGrant, "githubUserId" | "slotKey">
 ): Promise<void> {
   await getRedis().eval(
+    // Plain substring match on the stored JSON (no cjson dependency).
     `local raw = redis.call("GET", KEYS[1])
-     if not raw or cjson.decode(raw).txHash ~= ARGV[1] then return 0 end
+     if not raw or not string.find(raw, '"txHash":"' .. ARGV[1] .. '"', 1, true) then return 0 end
      if redis.call("EXISTS", KEYS[3]) == 1 then redis.call("DECR", KEYS[3]) end
      if redis.call("GET", KEYS[2]) == ARGV[2] then redis.call("DEL", KEYS[2]) end
      return redis.call("DEL", KEYS[1])`,
     [`${PENDING_PREFIX}${address}`, `${GH_PREFIX}${grant.githubUserId}`, grant.slotKey],
     [txHash, address]
   );
+}
+
+/** When a check first saw this transaction's nonce spent with no receipt. */
+export async function getNonceSpentSeenAt(
+  txHash: string
+): Promise<number | undefined> {
+  const at = await getRedis().get<number>(`${NONCE_SPENT_PREFIX}${txHash}`);
+  return typeof at === "number" ? at : undefined;
+}
+
+/** First observation wins; later calls change nothing. */
+export async function markNonceSpentSeen(
+  txHash: string,
+  at: number
+): Promise<void> {
+  await getRedis().set(`${NONCE_SPENT_PREFIX}${txHash}`, at, {
+    nx: true,
+    ex: NONCE_SPENT_TTL_SECONDS,
+  });
 }
 
 export async function clearPendingGrant(address: string): Promise<void> {
@@ -230,6 +258,29 @@ export async function acquireGrantLock(id: string): Promise<boolean> {
 
 export async function releaseGrantLock(id: string): Promise<void> {
   await getRedis().del(`${LOCK_PREFIX}${id}`);
+}
+
+const SIGNER_LOCK_ID = "signer";
+
+/**
+ * One grant at a time may sign and broadcast: two grants signing together
+ * would pick the same nonce and one would be stuck until proven dead. Waits
+ * briefly for the lock; false means "busy, try again".
+ */
+export async function acquireSignerLock(
+  waitMs = 20_000,
+  pollMs = 500
+): Promise<boolean> {
+  const deadline = Date.now() + waitMs;
+  for (;;) {
+    if (await acquireGrantLock(SIGNER_LOCK_ID)) return true;
+    if (Date.now() + pollMs > deadline) return false;
+    await new Promise((resolve) => setTimeout(resolve, pollMs));
+  }
+}
+
+export async function releaseSignerLock(): Promise<void> {
+  await releaseGrantLock(SIGNER_LOCK_ID);
 }
 
 // --- global daily cap --------------------------------------------------------

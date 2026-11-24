@@ -17,6 +17,11 @@ export interface PendingSend {
   raw: `0x${string}`;
   /** Epoch milliseconds when the record was written. */
   createdAt: number;
+  /**
+   * Epoch milliseconds when a check first saw the nonce spent with no receipt
+   * for this hash. Unset until that has been seen and stored.
+   */
+  nonceSpentSeenAt?: number;
 }
 
 export interface ChainIO {
@@ -43,11 +48,19 @@ export type SendOutcome =
 export interface SettleOptions {
   now?: () => number;
   /**
-   * How long after signing we wait before trusting "the nonce was used by a
-   * different transaction". Guards against an RPC that reports the new nonce
-   * before it can serve the receipt.
+   * How long "nonce spent, no receipt" must keep being true before we trust
+   * that a different transaction used the nonce. The clock starts at the FIRST
+   * check that saw it (not at signing: a stored transaction can be broadcast
+   * and mined long after it was signed). Guards against an RPC that reports
+   * the new nonce before it can serve the receipt.
    */
   deadAfterMs?: number;
+  /**
+   * Stores the moment "nonce spent, no receipt" was first seen, so a later
+   * check can read it back as `nonceSpentSeenAt`. Without it a send is never
+   * declared failed on nonce evidence.
+   */
+  onNonceSpent?: (at: number) => Promise<void>;
 }
 
 export const DEFAULT_DEAD_AFTER_MS = 5 * 60 * 1000;
@@ -77,9 +90,16 @@ export async function settlePending(
   }
 
   if (minedNonce > pending.nonce) {
-    // Our nonce is spent and there is no receipt for our hash: a different
-    // transaction took it, so ours can never be mined.
-    if (now() - pending.createdAt < deadAfterMs) {
+    // Our nonce is spent and there is no receipt for our hash. Either a
+    // different transaction took it, or ours was just mined and this RPC
+    // cannot serve the receipt yet. Only a later check, after the window,
+    // may call it dead.
+    const seenAt = pending.nonceSpentSeenAt;
+    if (seenAt === undefined) {
+      if (options.onNonceSpent) await options.onNonceSpent(now());
+      return { state: "unknown", txHash };
+    }
+    if (now() - seenAt < deadAfterMs) {
       return { state: "unknown", txHash };
     }
     return {

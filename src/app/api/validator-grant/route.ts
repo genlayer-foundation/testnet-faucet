@@ -13,19 +13,23 @@ import {
 } from "@/lib/tracked-send";
 import {
   acquireGrantLock,
+  acquireSignerLock,
   dailyKey,
   clearPendingGrant,
   getGitHubGrantAddress,
   getGrantConfig,
   getGrantsToday,
   getMainnetStanding,
+  getNonceSpentSeenAt,
   getPendingGrant,
   hasReceivedGrant,
   isGrantEnabled,
+  markNonceSpentSeen,
   recordGrant,
   reservePendingGrant,
   releaseFailedGrant,
   releaseGrantLock,
+  releaseSignerLock,
 } from "@/lib/validator-grant";
 import type { ClaimResponse } from "@/types";
 
@@ -167,7 +171,12 @@ export async function POST(
       if (pending) {
         let outcome: SendOutcome;
         try {
-          outcome = await settlePending(pending, io);
+          const nonceSpentSeenAt = await getNonceSpentSeenAt(pending.txHash);
+          outcome = await settlePending(
+            { ...pending, nonceSpentSeenAt },
+            io,
+            { onNonceSpent: (at) => markNonceSpentSeen(pending.txHash, at) }
+          );
         } catch (error) {
           console.error("Validator grant: could not settle pending send:", error);
           outcome = { state: "unknown", txHash: pending.txHash };
@@ -182,7 +191,17 @@ export async function POST(
         );
       }
 
-      const slotKey = dailyKey();
+      // One grant signs at a time (shared faucet nonce).
+      if (!(await acquireSignerLock())) {
+        return refuse(
+          "The faucet is busy with other grants. Nothing was sent. Please try again in a minute.",
+          503
+        );
+      }
+
+      // Read just before the reservation so a request that straddles UTC
+      // midnight counts against the right day.
+      let slotKey = dailyKey();
       let outcome: SendOutcome;
       try {
         const faucetBalance = await getFaucetBalanceWei();
@@ -197,9 +216,14 @@ export async function POST(
           normalizedAddress,
           config.amountWei,
           io,
-          (signed) => reservePendingGrant(
-            normalizedAddress, { ...signed, githubUserId, slotKey }, config.dailyCap
-          )
+          (signed) => {
+            slotKey = dailyKey();
+            return reservePendingGrant(
+              normalizedAddress,
+              { ...signed, githubUserId, slotKey },
+              config.dailyCap
+            );
+          }
         );
         switch (result) {
           case "granted":
@@ -217,6 +241,8 @@ export async function POST(
         // The reservation may have committed before its reply was lost.
         console.error("Validator grant: preparation or reservation failed:", error);
         return refuse("Could not complete your request. Please try again in a few minutes.", 502);
+      } finally {
+        await releaseSignerLock().catch(() => {});
       }
 
       return await respond(outcome, normalizedAddress, clientIp, {
