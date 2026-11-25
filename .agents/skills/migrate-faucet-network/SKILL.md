@@ -6,7 +6,9 @@ description: Map or implement this faucet's chain/network migration, including R
 # Migrate the faucet network
 
 Centralize migration work here. Paths below are relative to the repository root.
-For Bradbury Phase 2, read [the deployment reference](references/bradbury-phase-2.md).
+For Bradbury Phase 3 (current: a new consensus deployment on the same rollup, so only the
+name changes), read [its reference](references/bradbury-phase-3.md). For Bradbury Phase 2
+(the move from zkSync to the Orbit rollup), read [the deployment reference](references/bradbury-phase-2.md).
 For another target, obtain its deployment details and update/add the relevant reference;
 do not silently reuse Bradbury addresses or chain identity.
 
