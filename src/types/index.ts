@@ -7,9 +7,6 @@ export interface ClaimResponse {
   success: boolean;
   txHash?: string;
   explorerUrl?: string;
-  amount?: string;
-  /** Validator grant only: sent, but not confirmed yet. Do not treat as failed. */
-  pending?: boolean;
   error?: string;
   retryAfter?: number;
 }
