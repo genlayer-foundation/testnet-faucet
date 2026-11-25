@@ -30,8 +30,8 @@ The official faucet for [GenLayer Bradbury Phase 2](https://www.genlayer.com). C
 | Network | GenLayer Bradbury Phase 2 |
 | Chain ID | 4221 |
 | Currency | GEN (18 decimals) |
-| RPC | `https://rpc-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz` |
-| Explorer | [explorer-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz](https://explorer-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz) |
+| RPC | `https://rpc.testnet-chain.genlayer.com` |
+| Explorer | [scan.testnet-chain.genlayer.com](https://scan.testnet-chain.genlayer.com) |
 
 ## Getting Started
 
@@ -117,9 +117,9 @@ Set these values in the intended Vercel environment **before rebuilding**:
 ```dotenv
 NEXT_PUBLIC_CHAIN_NAME="GenLayer Bradbury Phase 2"
 NEXT_PUBLIC_CHAIN_ID=4221
-NEXT_PUBLIC_RPC_URL=https://rpc-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz
-NEXT_PUBLIC_EXPLORER_URL=https://explorer-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz
-RPC_URL=https://rpc-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz
+NEXT_PUBLIC_RPC_URL=https://rpc.testnet-chain.genlayer.com
+NEXT_PUBLIC_EXPLORER_URL=https://scan.testnet-chain.genlayer.com
+RPC_URL=https://rpc.testnet-chain.genlayer.com
 ```
 
 `RPC_URL` is optional, but an existing Vercel override must be updated or removed;
@@ -176,7 +176,7 @@ Request a token claim.
 {
   "success": true,
   "txHash": "0x...",
-  "explorerUrl": "https://explorer-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz/tx/0x..."
+  "explorerUrl": "https://scan.testnet-chain.genlayer.com/tx/0x..."
 }
 ```
 
