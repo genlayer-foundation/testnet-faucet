@@ -38,9 +38,11 @@ Observed on 2026-11-25 at 14:44 UTC, block 706183. Both hosts are the same chain
 | `https://rpc.testnet-chain.genlayer.com` | `4221` | `0x17d89764d4f4f963158fc4c5e8f2cb670c2837740b35f37081c12860c3df97e4` |
 
 Because the rollup is the same, wallets need no RPC or explorer edit for this migration, and
-balances are the same balances. The expected faucet wallet
-`0x08E9F4723CF5A27866bB11eD2C41162e05206777` held 82,584,688 GEN at that block. The address
-derived from Vercel's `FAUCET_PRIVATE_KEY` has not been verified.
+balances are the same balances. The address derived from
+Vercel Production's `FAUCET_PRIVATE_KEY` is `0xdF1fEa8d3aB0f923Ab0B08730457861644F894Cf`
+(checked 2026-11-26; it held 19,988,400 GEN, the same figure `/api/stats` reports as
+`faucetBalance`). `0x08E9F4723CF5A27866bB11eD2C41162e05206777`, named here before as the
+expected faucet wallet, is not the key the deployment uses.
 
 ## Deployment facts
 
@@ -78,3 +80,9 @@ NEXT_PUBLIC_CHAIN_NAME="GenLayer Testnet"
 The value is also the `chainName` sent to `wallet_addEthereumChain` and the "Add … to Wallet"
 button, so it stays short; the README says which deployments it serves. Set on Vercel
 Production and redeployed on 2026-11-26; the live page shows "GenLayer Testnet".
+
+The page names the deployments the chain serves from `src/lib/networks.ts` (subtitle,
+metadata and the "One GEN balance, both testnets" card with network pages, explorers and
+setup docs). Edit that list when a deployment on the chain starts or retires. Claim limits
+are per wallet, GitHub account and IP and know nothing of deployments, so Clarke needs no
+limit, marker or wallet change: one claim funds a wallet on both.
