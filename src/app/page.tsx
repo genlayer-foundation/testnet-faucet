@@ -3,7 +3,9 @@ import { FaucetForm } from "@/components/faucet-form";
 import { FaucetStatsDisplay } from "@/components/faucet-stats";
 import { AddNetworkButton } from "@/components/add-network-button";
 import { Footer } from "@/components/footer";
+import { NetworksCard } from "@/components/networks-card";
 import { getGenlayerChain } from "@/lib/chain";
+import { deploymentNames } from "@/lib/networks";
 
 export default function Home() {
   const chain = getGenlayerChain();
@@ -48,7 +50,7 @@ export default function Home() {
               Testnet Faucet
             </h1>
             <p className="mx-auto mt-2.5 max-w-[280px] text-[15px] leading-relaxed text-text-secondary">
-              Get {claimAmount} GEN tokens for testing on {chain.name}
+              Get {claimAmount} GEN tokens for testing on {deploymentNames()}
             </p>
           </div>
 
@@ -109,6 +111,9 @@ export default function Home() {
             rpcUrls: [...chain.rpcUrls.default.http],
             blockExplorerUrls: [chain.blockExplorers.default.url],
           }} />
+
+          {/* Networks served by this chain */}
+          <NetworksCard chainId={chain.id} explorerUrl={chain.blockExplorers.default.url} />
 
           {/* Stats */}
           <FaucetStatsDisplay />

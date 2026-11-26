@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AuthSessionProvider } from "@/components/session-provider";
+import { deploymentNames } from "@/lib/networks";
 import { getGenlayerChain } from "@/lib/chain";
 import "./globals.css";
 
@@ -15,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export function generateMetadata(): Metadata {
-  const networkName = getGenlayerChain().name;
+  const networkName = `${getGenlayerChain().name} (${deploymentNames()})`;
   const claimAmount = Number(process.env.NEXT_PUBLIC_CLAIM_AMOUNT) || 100;
   return {
     title: "GenLayer Testnet Faucet | Get GEN Tokens",
