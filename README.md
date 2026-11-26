@@ -1,6 +1,6 @@
 # GenLayer Testnet Faucet
 
-The official faucet for [GenLayer Bradbury Phase 3](https://www.genlayer.com). Claim free GEN tokens to build and test on the network.
+The official faucet for the [GenLayer Testnet](https://www.genlayer.com) (chain 4221). Claim free GEN tokens to build and test on the network. GEN on this chain serves both live testnets, Bradbury Phase 3 and Clarke: they are separate consensus deployments on the same rollup and share balances.
 
 **Live at [testnet-faucet.genlayer.foundation](https://testnet-faucet.genlayer.foundation)**
 
@@ -12,7 +12,7 @@ The official faucet for [GenLayer Bradbury Phase 3](https://www.genlayer.com). C
 - **CAPTCHA protection** — Cloudflare Turnstile to prevent abuse
 - **Concurrent safety** — Redis locks per wallet and per GitHub account; limits are re-read inside the locks
 - **Fair counting** — rate limits only consumed after successful transaction
-- **Add network** — one-click MetaMask/wallet integration for Bradbury Phase 3
+- **Add network** — one-click MetaMask/wallet integration for the GenLayer Testnet (chain 4221)
 
 ## Tech Stack
 
@@ -27,7 +27,7 @@ The official faucet for [GenLayer Bradbury Phase 3](https://www.genlayer.com). C
 
 | Parameter | Value |
 | --- | --- |
-| Network | GenLayer Bradbury Phase 3 |
+| Network | GenLayer Testnet (Bradbury Phase 3 and Clarke) |
 | Chain ID | 4221 |
 | Currency | GEN (18 decimals) |
 | RPC | `https://rpc-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz` |
@@ -40,7 +40,7 @@ The official faucet for [GenLayer Bradbury Phase 3](https://www.genlayer.com). C
 - Node.js 22.13+ (including the network configuration checks)
 - An [Upstash Redis](https://upstash.com) instance
 - A [Cloudflare Turnstile](https://dash.cloudflare.com/?to=/:account/turnstile) site key and secret
-- A funded wallet on the Bradbury rollup (chain 4221; Phase 3 runs on the same rollup as Phase 2)
+- A funded wallet on the GenLayer Testnet rollup (chain 4221; Bradbury Phase 3 and Clarke both run on it)
 
 ### Setup
 
@@ -86,7 +86,7 @@ The app will be running at `http://localhost:3000`.
 | `KV_REST_API_URL` | Upstash Redis REST URL | Yes |
 | `KV_REST_API_TOKEN` | Upstash Redis REST token | Yes |
 | `NEXT_PUBLIC_EXPLORER_URL` | HTTP(S) explorer base URL; trailing slashes are removed | Yes |
-| `NEXT_PUBLIC_CHAIN_ID` | Positive integer chain ID (`4221` for Bradbury Phase 3, unchanged from Phase 2); no fallback | Yes |
+| `NEXT_PUBLIC_CHAIN_ID` | Positive integer chain ID (`4221` for Bradbury Phase 3 and Clarke, unchanged from Phase 2); no fallback | Yes |
 | `CLAIM_AMOUNT` | GEN per claim (default: `100`) | No |
 | `NEXT_PUBLIC_CLAIM_AMOUNT` | Displayed claim amount (default: `100`) | No |
 | `BALANCE_THRESHOLD` | Max recipient balance (default: `1000`) | No |
@@ -115,7 +115,7 @@ another chain. Native GEN with 18 decimals remains a transfer assumption.
 Set these values in the intended Vercel environment **before rebuilding**:
 
 ```dotenv
-NEXT_PUBLIC_CHAIN_NAME="GenLayer Bradbury Phase 3"
+NEXT_PUBLIC_CHAIN_NAME="GenLayer Testnet"
 NEXT_PUBLIC_CHAIN_ID=4221
 NEXT_PUBLIC_RPC_URL=https://rpc-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz
 NEXT_PUBLIC_EXPLORER_URL=https://explorer-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz

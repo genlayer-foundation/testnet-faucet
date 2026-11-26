@@ -64,3 +64,17 @@ account every 7 days, and a wallet holding more than 1,000 GEN cannot claim, so 
 cannot fund a validator. The validator grant was removed on 2026-11-25. How validators get
 their stake is a decision outside this repository; do not change amounts or add a grant here
 unless requested.
+
+## Clarke (2026-11-26): one name for both
+
+Clarke (consensus `v0.6.1`, genesis block `713692`) is a further consensus deployment on the
+same rollup, running **alongside** Phase 3. GEN balances on chain `4221` serve both, so the
+faucet now names the chain, not a deployment:
+
+```dotenv
+NEXT_PUBLIC_CHAIN_NAME="GenLayer Testnet"
+```
+
+The value is also the `chainName` sent to `wallet_addEthereumChain` and the "Add … to Wallet"
+button, so it stays short; the README says which deployments it serves. Set on Vercel
+Production and redeployed on 2026-11-26; the live page shows "GenLayer Testnet".
